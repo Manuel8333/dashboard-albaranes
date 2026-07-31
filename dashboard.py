@@ -31,62 +31,62 @@ def limpiar_moneda(val):
     except:
         return 0.0
 
-# Detección automática y robusta de columnas numéricas y de texto
-columnas_texto = [c for c in df.columns if df[c].dtype == 'object' or str(df[c].dtype).startswith('cat')]
-columnas_num = []
+def encontrar_columna(opciones):
+    for op in opciones:
+        for c in df.columns:
+            if op.lower() in c.lower():
+                return c
+    return None
 
-for c in df.columns:
-    muestra = df[c].apply(limpiar_moneda)
-    if muestra.sum() > 0:
-        columnas_num.append(c)
-        df[c] = muestra
+col_importe = encontrar_columna(['importe', 'base'])
+col_iva = encontrar_columna(['iva'])
+col_total = encontrar_columna(['total factura', 'total_factura', 'total'])
+col_prov = encontrar_columna(['proveedor', 'proveedores'])
+col_semana = encontrar_columna(['semana'])
+col_mes = encontrar_columna(['mes'])
 
-# Seleccionar principales columnas de forma inteligente
-col_total = next((c for c in columnas_num if any(k in c.lower() for k in ['total', 'facturado', 'importe', 'suma'])), columnas_num[0] if columnas_num else None)
-col_prov = next((c for c in columnas_texto if any(k in c.lower() for k in ['proveedor', 'nombre', 'cliente'])), columnas_texto[0] if columnas_texto else None)
-col_tiempo = next((c for c in columnas_texto if any(k in c.lower() for k in ['mes', 'semana', 'fecha', 'periodo', 'dia'])), None)
+# Limpiar solo las columnas monetarias reales
+for c in [col_importe, col_iva, col_total]:
+    if c and c in df.columns:
+        df[c] = df[c].apply(limpiar_moneda)
 
 st.title("📊 Dashboard de Control y Facturación")
 st.markdown("---")
 
 total_registros = len(df)
+val_importe = df[col_importe].sum() if col_importe else 0
+val_iva = df[col_iva].sum() if col_iva else 0
 val_total = df[col_total].sum() if col_total else 0
 
-st.markdown(f"### Resumen General ({total_registros} registros)")
+st.markdown(f"### Resumen Económico ({total_registros} registros)")
 
-# Mostrar métricas automáticas con todas las columnas numéricas detectadas
-if columnas_num:
-    cols_metrica = st.columns(min(len(columnas_num), 4))
-    for i, col_name in enumerate(columnas_num[:4]):
-        val_m = df[col_name].sum()
-        with cols_metrica[i]:
-            st.metric(col_name, f"{val_m:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+c1, c2, c3 = st.columns(3)
+if col_importe:
+    c1.metric("Importe (Base)", f"{val_importe:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+if col_iva:
+    c2.metric("IVA", f"{val_iva:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+if col_total:
+    c3.metric("Total Factura", f"{val_total:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
 
 st.markdown("---")
 
-# Estructura limpia de dashboard con gráficos profesionales
 g1, g2 = st.columns(2)
 
 with g1:
-    st.markdown("#### 🏢 Top Elementos / Proveedores")
+    st.markdown("#### 🏢 Principales Proveedores")
     if col_prov and col_total:
         df_p = df.groupby(col_prov, as_index=False)[col_total].sum().sort_values(by=col_total, ascending=True).tail(10)
-        fig_prov = px.bar(df_p, x=col_total, y=col_prov, orientation='h')
+        fig_prov = px.bar(df_p, x=col_total, y=col_prov, orientation='h', labels={col_total: "Total Facturado", col_prov: "Proveedor"})
         st.plotly_chart(fig_prov, use_container_width=True)
     else:
-        st.info("No se encontró columna para agrupar.")
+        st.info("Columna de proveedor no detectada.")
 
 with g2:
-    st.markdown("#### 📈 Distribución Temporal / Criterio")
-    if col_tiempo and col_total:
-        df_t = df.groupby(col_tiempo, as_index=False)[col_total].sum()
-        fig_t = px.bar(df_t, x=col_tiempo, y=col_total)
+    st.markdown("#### 📈 Gasto por Periodo (Semana / Mes)")
+    tiempo_col = col_semana or col_mes
+    if tiempo_col and col_total:
+        df_t = df.groupby(tiempo_col, as_index=False)[col_total].sum()
+        fig_t = px.bar(df_t, x=tiempo_col, y=col_total, labels={col_total: "Total Facturado", tiempo_col: "Periodo"})
         st.plotly_chart(fig_t, use_container_width=True)
     else:
-        alt_col = next((c for c in columnas_texto if c != col_prov), None)
-        if alt_col and col_total:
-            df_alt = df.groupby(alt_col, as_index=False)[col_total].sum().head(10)
-            fig_alt = px.bar(df_alt, x=alt_col, y=col_total)
-            st.plotly_chart(fig_alt, use_container_width=True)
-        else:
-            st.info("Gráfico secundario no disponible.")
+        st.info("Columna temporal no disponible.")
