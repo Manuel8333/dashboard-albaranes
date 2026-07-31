@@ -42,10 +42,15 @@ col_importe = encontrar_columna(['importe', 'base'])
 col_iva = encontrar_columna(['iva'])
 col_total = encontrar_columna(['total factura', 'total_factura', 'total'])
 col_prov = encontrar_columna(['proveedor', 'proveedores'])
-col_semana = encontrar_columna(['semana'])
-col_mes = encontrar_columna(['mes'])
 
-# Limpiar solo las columnas monetarias reales
+# Búsqueda inteligente de columna temporal o de desglose secundario
+col_tiempo = encontrar_columna(['semana', 'mes', 'fecha', 'periodo', 'dia', 'área', 'area', 'concepto'])
+if not col_tiempo:
+    # Respaldo automático: coge la primera columna de texto que no sea proveedor
+    text_cols = [c for c in df.columns if c not in [col_prov] and df[c].dtype == 'object']
+    col_tiempo = text_cols[0] if text_cols else (df.columns[0] if len(df.columns) > 0 else None)
+
+# Limpiar columnas monetarias
 for c in [col_importe, col_iva, col_total]:
     if c and c in df.columns:
         df[c] = df[c].apply(limpiar_moneda)
@@ -82,11 +87,11 @@ with g1:
         st.info("Columna de proveedor no detectada.")
 
 with g2:
-    st.markdown("#### 📈 Gasto por Periodo (Semana / Mes)")
-    tiempo_col = col_semana or col_mes
-    if tiempo_col and col_total:
-        df_t = df.groupby(tiempo_col, as_index=False)[col_total].sum()
-        fig_t = px.bar(df_t, x=tiempo_col, y=col_total, labels={col_total: "Total Facturado", tiempo_col: "Periodo"})
+    titulo_grafico = f"Desglose por {col_tiempo}" if col_tiempo else "Desglose de Datos"
+    st.markdown(f"#### 📈 {titulo_grafico}")
+    if col_tiempo and col_total:
+        df_t = df.groupby(col_tiempo, as_index=False)[col_total].sum()
+        fig_t = px.bar(df_t, x=col_tiempo, y=col_total, labels={col_total: "Total Facturado", col_tiempo: col_tiempo})
         st.plotly_chart(fig_t, use_container_width=True)
     else:
-        st.info("Columna temporal no disponible.")
+        st.info("No hay datos suficientes para el gráfico secundario.")
