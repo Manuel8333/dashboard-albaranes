@@ -44,15 +44,17 @@ def encontrar_columna(opciones):
     return None
 
 col_total = encontrar_columna(['total factura', 'total_factura', 'total', 'importe'])
-col_cocina = encontrar_columna(['cocina'])
-col_sala = encontrar_columna(['sala'])
-col_otros = encontrar_columna(['evento', 'otros', 'otro'])
 col_prov = encontrar_columna(['proveedor', 'proveedores'])
 col_fecha = encontrar_columna(['fecha', 'dia'])
 col_mes = encontrar_columna(['mes'])
+col_area = encontrar_columna(['area', 'área', 'departamento', 'seccion', 'sección', 'categoria', 'categoría'])
+
+col_cocina_sep = encontrar_columna(['cocina'])
+col_sala_sep = encontrar_columna(['sala'])
+col_otros_sep = encontrar_columna(['evento', 'otros', 'otro'])
 
 # Limpieza estricta de las columnas monetarias
-for c in [col_total, col_cocina, col_sala, col_otros]:
+for c in [col_total, col_cocina_sep, col_sala_sep, col_otros_sep]:
     if c and c in df.columns:
         df[c] = df[c].apply(limpiar_moneda)
 
@@ -104,9 +106,28 @@ total_registros_total = len(df)
 total_registros_filtro = len(df_filtrado)
 
 val_total = df_filtrado[col_total].sum() if col_total else 0
-val_cocina = df_filtrado[col_cocina].sum() if col_cocina else 0
-val_sala = df_filtrado[col_sala].sum() if col_sala else 0
-val_otros = df_filtrado[col_otros].sum() if col_otros else 0
+
+# Extracción de valores para Cocina, Sala y Otros
+if col_cocina_sep and col_cocina_sep in df_filtrado.columns:
+    val_cocina = df_filtrado[col_cocina_sep].sum()
+elif col_area and col_total:
+    val_cocina = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('cocina', na=False)][col_total].sum()
+else:
+    val_cocina = 0.0
+
+if col_sala_sep and col_sala_sep in df_filtrado.columns:
+    val_sala = df_filtrado[col_sala_sep].sum()
+elif col_area and col_total:
+    val_sala = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('sala', na=False)][col_total].sum()
+else:
+    val_sala = 0.0
+
+if col_otros_sep and col_otros_sep in df_filtrado.columns:
+    val_otros = df_filtrado[col_otros_sep].sum()
+elif col_area and col_total:
+    val_otros = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('otro|evento', na=False)][col_total].sum()
+else:
+    val_otros = max(0.0, val_total - (val_cocina + val_sala))
 
 st.markdown(f"### Resumen Económico (Mostrando {total_registros_filtro} de {total_registros_total} registros)")
 
@@ -138,16 +159,17 @@ with g1:
         st.warning("No hay datos de proveedores para los filtros seleccionados.")
 
 with g2:
-    st.markdown("#### 📈 Evolución por Mes")
-    if col_mes and col_total and not df_filtrado.empty:
-        df_m = df_filtrado.groupby(col_mes, as_index=False)[col_total].sum()
-        fig_m = px.bar(
-            df_m, 
-            x=col_mes, 
-            y=col_total, 
-            labels={col_total: "Total Facturado (€)", col_mes: "Mes"},
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_m, use_container_width=True)
-    else:
-        st.warning("No hay datos temporales disponibles para graficar con los filtros actuales.")
+    st.markdown("#### 📊 Distribución por Áreas (Cocina, Sala, Otros)")
+    df_areas = pd.DataFrame({
+        'Área': ['Cocina', 'Sala', 'Eventos y Otros'],
+        'Importe': [val_cocina, val_sala, val_otros]
+    })
+    fig_areas = px.bar(
+        df_areas, 
+        x='Área', 
+        y='Importe', 
+        color='Área',
+        labels={'Importe': 'Total Facturado (€)', 'Área': 'Departamento'},
+        template="plotly_white"
+    )
+    st.plotly_chart(fig_areas, use_container_width=True)
