@@ -1,4 +1,3 @@
-
 import io
 import requests
 import streamlit as st
@@ -28,24 +27,11 @@ def limpiar_moneda(val):
     except:
         return 0.0
 
-# Obtener todas las columnas que parezcan numéricas
-columnas_numericas = []
-for c in df.columns:
-    if c.lower() not in ['mes', 'semana', 'id', 'año', 'codigo', 'código']:
-        # Probar si la columna se puede convertir parcialmente a número
-        muestra = df[c].dropna().head(5)
-        convertibles = 0
-        for val in muestra:
-            if limpiar_moneda(val) > 0:
-                convertibles += 1
-        if convertibles > 0:
-            columnas_numericas.append(c)
-
-# Asignar automáticamente según orden o nombres
-col_total = next((c for c in df.columns if 'total' in c.lower() or 'facturado' in c.lower()), columnas_numericas[0] if columnas_numericas else None)
-col_cocina = next((c for c in df.columns if 'cocina' in c.lower()), columnas_numericas[1] if len(columnas_numericas) > 1 else None)
-col_sala = next((c for c in df.columns if 'sala' in c.lower()), columnas_numericas[2] if len(columnas_numericas) > 2 else None)
-col_eventos = next((c for c in df.columns if 'evento' in c.lower() or 'otros' in c.lower()), columnas_numericas[3] if len(columnas_numericas) > 3 else None)
+# Buscar columnas clave de forma precisa
+col_total = next((c for c in df.columns if 'total' in c.lower() or 'facturado' in c.lower()), None)
+col_cocina = next((c for c in df.columns if 'cocina' in c.lower()), None)
+col_sala = next((c for c in df.columns if 'sala' in c.lower()), None)
+col_eventos = next((c for c in df.columns if 'evento' in c.lower() or 'otros' in c.lower()), None)
 
 for col in [col_total, col_cocina, col_sala, col_eventos]:
     if col:
