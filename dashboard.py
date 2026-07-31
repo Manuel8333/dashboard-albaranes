@@ -47,7 +47,6 @@ col_total = encontrar_columna(['total factura', 'total_factura', 'total', 'impor
 col_prov = encontrar_columna(['proveedor', 'proveedores'])
 col_fecha = encontrar_columna(['fecha', 'dia'])
 col_mes = encontrar_columna(['mes'])
-col_area = encontrar_columna(['area', 'área', 'departamento', 'seccion', 'sección', 'categoria', 'categoría', 'tipo'])
 
 col_cocina_sep = encontrar_columna(['cocina'])
 col_sala_sep = encontrar_columna(['sala'])
@@ -58,18 +57,30 @@ for c in [col_total, col_cocina_sep, col_sala_sep, col_otros_sep]:
     if c and c in df.columns:
         df[c] = df[c].apply(limpiar_moneda)
 
-# Unificar o normalizar la columna de área si no viene explícita pero existen columnas separadas
-if not col_area:
-    if col_cocina_sep or col_sala_sep or col_otros_sep:
-        # Crear una columna virtual o normalizada para el filtrado
-        def clasificar_area(row):
-            if col_cocina_sep and row.get(col_cocina_sep, 0) > 0:
-                return 'Cocina'
-            if col_sala_sep and row.get(col_sala_sep, 0) > 0:
-                return 'Sala'
+# Crear una columna de Área limpia y estricta basada exclusivamente en los departamentos reales
+def clasificar_departamento(row):
+    # Si existen columnas numéricas separadas para cocina/sala/otros
+    val_c = row.get(col_cocina_sep, 0) if col_cocina_sep else 0
+    val_s = row.get(col_sala_sep, 0) if col_sala_sep else 0
+    val_o = row.get(col_otros_sep, 0) if col_otros_sep else 0
+    
+    if val_c > 0 and val_c >= val_s and val_c >= val_o:
+        return 'Cocina'
+    elif val_s > 0 and val_s > val_c and val_s >= val_o:
+        return 'Sala'
+    elif val_o > 0:
+        return 'Eventos y Otros'
+    else:
+        # Si no hay importes separados, buscar en texto de la fila (excluyendo proveedor)
+        fila_str = " ".join([str(v) for k, v in row.items() if k != col_prov]).lower()
+        if 'cocina' in fila_str:
+            return 'Cocina'
+        elif 'sala' in fila_str:
+            return 'Sala'
+        else:
             return 'Eventos y Otros'
-        df['Area_Virtual'] = df.apply(clasificar_area, axis=1)
-        col_area = 'Area_Virtual'
+
+df['Departamento_Limpio'] = df.apply(clasificar_departamento, axis=1)
 
 # Procesar mes para el filtro directo
 if col_fecha and not col_mes:
@@ -88,18 +99,17 @@ st.sidebar.subheader("Filtros Dinámicos")
 
 df_filtrado = df.copy()
 
-# 1. Filtro por Área / Departamento (Cocina, Sala, Otros)
-if col_area:
-    areas_unicas = sorted(df[col_area].dropna().astype(str).unique())
-    sel_todas_areas = st.sidebar.checkbox("Seleccionar todas las áreas", value=True)
-    
-    if sel_todas_areas:
-        areas_seleccionadas = st.sidebar.multiselect("Filtrar por Área:", areas_unicas, default=areas_unicas)
-    else:
-        areas_seleccionadas = st.sidebar.multiselect("Filtrar por Área:", areas_unicas, default=[])
+# 1. Filtro estricto por Departamento (Cocina, Sala, Eventos y Otros)
+areas_unicas = ['Cocina', 'Sala', 'Eventos y Otros']
+sel_todas_areas = st.sidebar.checkbox("Seleccionar todas las áreas", value=True)
 
-    if areas_seleccionadas:
-        df_filtrado = df_filtrado[df_filtrado[col_area].astype(str).isin(areas_seleccionadas)]
+if sel_todas_areas:
+    areas_seleccionadas = st.sidebar.multiselect("Filtrar por Área:", areas_unicas, default=areas_unicas)
+else:
+    areas_seleccionadas = st.sidebar.multiselect("Filtrar por Área:", areas_unicas, default=[])
+
+if areas_seleccionadas:
+    df_filtrado = df_filtrado[df_filtrado['Departamento_Limpio'].isin(areas_seleccionadas)]
 
 # 2. Filtro interactivo por Proveedor con opción de Seleccionar Todos
 if col_prov:
@@ -114,7 +124,7 @@ if col_prov:
     if prov_seleccionados:
         df_filtrado = df_filtrado[df_filtrado[col_prov].astype(str).isin(prov_seleccionados)]
 
-# 3. Filtro interactivo por Mes (Selector directo de meses)
+# 3. Filtro interactivo por Mes
 if col_mes:
     meses_unicos = sorted(df[col_mes].dropna().astype(str).unique())
     meses_seleccionados = st.sidebar.multiselect("Filtrar por Mes:", meses_unicos, default=meses_unicos)
@@ -125,7 +135,7 @@ if col_mes:
 # CUERPO PRINCIPAL DEL DASHBOARD
 # ==========================================
 st.title("📊 Dashboard Interactivo de Albaranes")
-st.markdown("Panel de control económico con filtrado dinámico por Área, Proveedor y Mes en tiempo real.")
+st.markdown("Panel de control económico con filtrado dinámico limpio y actualizado en tiempo real.")
 st.markdown("---")
 
 total_registros_total = len(df)
@@ -133,27 +143,10 @@ total_registros_filtro = len(df_filtrado)
 
 val_total = df_filtrado[col_total].sum() if col_total else 0
 
-# Extracción de valores para Cocina, Sala y Otros sobre el dataframe filtrado
-if col_cocina_sep and col_cocina_sep in df_filtrado.columns:
-    val_cocina = df_filtrado[col_cocina_sep].sum()
-elif col_area and col_total:
-    val_cocina = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('cocina', na=False)][col_total].sum()
-else:
-    val_cocina = 0.0
-
-if col_sala_sep and col_sala_sep in df_filtrado.columns:
-    val_sala = df_filtrado[col_sala_sep].sum()
-elif col_area and col_total:
-    val_sala = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('sala', na=False)][col_total].sum()
-else:
-    val_sala = 0.0
-
-if col_otros_sep and col_otros_sep in df_filtrado.columns:
-    val_otros = df_filtrado[col_otros_sep].sum()
-elif col_area and col_total:
-    val_otros = df_filtrado[df_filtrado[col_area].astype(str).str.lower().str.contains('otro|evento', na=False)][col_total].sum()
-else:
-    val_otros = max(0.0, val_total - (val_cocina + val_sala))
+# Extracción de valores para las métricas superiores sobre el dataframe filtrado
+val_cocina = df_filtrado[df_filtrado['Departamento_Limpio'] == 'Cocina'][col_total].sum() if col_total else 0
+val_sala = df_filtrado[df_filtrado['Departamento_Limpio'] == 'Sala'][col_total].sum() if col_total else 0
+val_otros = df_filtrado[df_filtrado['Departamento_Limpio'] == 'Eventos y Otros'][col_total].sum() if col_total else 0
 
 st.markdown(f"### Resumen Económico (Mostrando {total_registros_filtro} de {total_registros_total} registros)")
 
@@ -188,7 +181,11 @@ with g2:
     st.markdown("#### 📊 Distribución por Áreas (Filtrado)")
     df_areas = pd.DataFrame({
         'Área': ['Cocina', 'Sala', 'Eventos y Otros'],
-        'Importe': [val_cocina, val_sala, val_otros]
+        'Importe': [
+            df_filtrado[df_filtrado['Departamento_Limpio'] == 'Cocina'][col_total].sum() if col_total else 0,
+            df_filtrado[df_filtrado['Departamento_Limpio'] == 'Sala'][col_total].sum() if col_total else 0,
+            df_filtrado[df_filtrado['Departamento_Limpio'] == 'Eventos y Otros'][col_total].sum() if col_total else 0
+        ]
     })
     fig_areas = px.bar(
         df_areas, 
