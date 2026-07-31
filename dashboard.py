@@ -27,7 +27,7 @@ def limpiar_moneda(val):
     except:
         return 0.0
 
-# Buscar columnas clave de forma precisa
+# Búsqueda estricta de columnas para evitar duplicados en el resumen
 col_total = next((c for c in df.columns if 'total' in c.lower() or 'facturado' in c.lower()), None)
 col_cocina = next((c for c in df.columns if 'cocina' in c.lower()), None)
 col_sala = next((c for c in df.columns if 'sala' in c.lower()), None)
