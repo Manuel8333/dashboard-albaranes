@@ -43,14 +43,15 @@ def encontrar_columna(opciones):
                 return c
     return None
 
-col_importe = encontrar_columna(['importe', 'base'])
-col_iva = encontrar_columna(['iva'])
-col_total = encontrar_columna(['total factura', 'total_factura', 'total'])
+col_total = encontrar_columna(['total factura', 'total_factura', 'total', 'importe'])
+col_cocina = encontrar_columna(['cocina'])
+col_sala = encontrar_columna(['sala'])
+col_otros = encontrar_columna(['evento', 'otros', 'otro'])
 col_prov = encontrar_columna(['proveedor', 'proveedores'])
 col_fecha = encontrar_columna(['fecha', 'mes', 'semana', 'periodo', 'dia'])
 
 # Limpieza estricta de las columnas monetarias
-for c in [col_importe, col_iva, col_total]:
+for c in [col_total, col_cocina, col_sala, col_otros]:
     if c and c in df.columns:
         df[c] = df[c].apply(limpiar_moneda)
 
@@ -67,10 +68,18 @@ st.sidebar.subheader("Filtros Dinámicos")
 
 df_filtrado = df.copy()
 
-# Filtro interactivo por Proveedor
+# Filtro interactivo por Proveedor con opción de Seleccionar Todos
 if col_prov:
     proveedores_unicos = sorted(df[col_prov].dropna().astype(str).unique())
-    prov_seleccionados = st.sidebar.multiselect("Filtrar por Proveedor:", proveedores_unicos)
+    
+    # Casilla para marcar/desmarcar todos de golpe
+    seleccionar_todos = st.sidebar.checkbox("Seleccionar todos los proveedores", value=True)
+    
+    if seleccionar_todos:
+        prov_seleccionados = st.sidebar.multiselect("Filtrar por Proveedor:", proveedores_unicos, default=proveedores_unicos)
+    else:
+        prov_seleccionados = st.sidebar.multiselect("Filtrar por Proveedor:", proveedores_unicos, default=[])
+
     if prov_seleccionados:
         df_filtrado = df_filtrado[df_filtrado[col_prov].astype(str).isin(prov_seleccionados)]
 
@@ -96,25 +105,25 @@ if col_fecha and not df[col_fecha].isna().all():
 # CUERPO PRINCIPAL DEL DASHBOARD
 # ==========================================
 st.title("📊 Dashboard Interactivo de Albaranes")
-st.markdown("Panel de control económico con actualización en tiempo real según los filtros seleccionados.")
+st.markdown("Panel de control económico con desglose por Cocina, Sala y Otros, actualizado en tiempo real.")
 st.markdown("---")
 
 # Métricas calculadas sobre el dataset filtrado
 total_registros_total = len(df)
 total_registros_filtro = len(df_filtrado)
-val_importe = df_filtrado[col_importe].sum() if col_importe else 0
-val_iva = df_filtrado[col_iva].sum() if col_iva else 0
+
 val_total = df_filtrado[col_total].sum() if col_total else 0
+val_cocina = df_filtrado[col_cocina].sum() if col_cocina else 0
+val_sala = df_filtrado[col_sala].sum() if col_sala else 0
+val_otros = df_filtrado[col_otros].sum() if col_otros else 0
 
 st.markdown(f"### Resumen Económico (Mostrando {total_registros_filtro} de {total_registros_total} registros)")
 
-c1, c2, c3 = st.columns(3)
-if col_importe:
-    c1.metric("Importe (Base)", f"{val_importe:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
-if col_iva:
-    c2.metric("IVA", f"{val_iva:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
-if col_total:
-    c3.metric("Total Factura", f"{val_total:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Total Facturado", f"{val_total:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+c2.metric("Gasto Cocina", f"{val_cocina:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+c3.metric("Gasto Sala", f"{val_sala:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+c4.metric("Eventos y Otros", f"{val_otros:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
 
 st.markdown("---")
 
