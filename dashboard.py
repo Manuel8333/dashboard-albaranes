@@ -48,16 +48,21 @@ col_cocina = encontrar_columna(['cocina'])
 col_sala = encontrar_columna(['sala'])
 col_otros = encontrar_columna(['evento', 'otros', 'otro'])
 col_prov = encontrar_columna(['proveedor', 'proveedores'])
-col_fecha = encontrar_columna(['fecha', 'mes', 'semana', 'periodo', 'dia'])
+col_fecha = encontrar_columna(['fecha', 'dia'])
+col_mes = encontrar_columna(['mes'])
 
 # Limpieza estricta de las columnas monetarias
 for c in [col_total, col_cocina, col_sala, col_otros]:
     if c and c in df.columns:
         df[c] = df[c].apply(limpiar_moneda)
 
-# Conversión segura de fecha si existe
-if col_fecha:
+# Procesar mes para el filtro directo
+if col_fecha and not col_mes:
     df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
+    df['Mes_Filtro'] = df[col_fecha].dt.strftime('%B %Y')
+    col_mes = 'Mes_Filtro'
+elif col_mes:
+    df[col_mes] = df[col_mes].astype(str)
 
 # ==========================================
 # BARRA LATERAL: FILTROS INTERACTIVOS
@@ -71,8 +76,6 @@ df_filtrado = df.copy()
 # Filtro interactivo por Proveedor con opción de Seleccionar Todos
 if col_prov:
     proveedores_unicos = sorted(df[col_prov].dropna().astype(str).unique())
-    
-    # Casilla para marcar/desmarcar todos de golpe
     seleccionar_todos = st.sidebar.checkbox("Seleccionar todos los proveedores", value=True)
     
     if seleccionar_todos:
@@ -83,23 +86,12 @@ if col_prov:
     if prov_seleccionados:
         df_filtrado = df_filtrado[df_filtrado[col_prov].astype(str).isin(prov_seleccionados)]
 
-# Filtro interactivo por Rango de Fechas
-if col_fecha and not df[col_fecha].isna().all():
-    min_date = df[col_fecha].min()
-    max_date = df[col_fecha].max()
-    if pd.notna(min_date) and pd.notna(max_date):
-        rango_fechas = st.sidebar.date_input(
-            "Seleccionar Rango de Fechas:",
-            value=(min_date.date(), max_date.date()),
-            min_value=min_date.date(),
-            max_value=max_date.date()
-        )
-        if len(rango_fechas) == 2:
-            start_d, end_d = rango_fechas
-            df_filtrado = df_filtrado[
-                (df_filtrado[col_fecha].dt.date >= start_d) & 
-                (df_filtrado[col_fecha].dt.date <= end_d)
-            ]
+# Filtro interactivo por Mes (Selector directo de meses)
+if col_mes:
+    meses_unicos = sorted(df[col_mes].dropna().astype(str).unique())
+    meses_seleccionados = st.sidebar.multiselect("Filtrar por Mes:", meses_unicos, default=meses_unicos)
+    if meses_seleccionados:
+        df_filtrado = df_filtrado[df_filtrado[col_mes].astype(str).isin(meses_seleccionados)]
 
 # ==========================================
 # CUERPO PRINCIPAL DEL DASHBOARD
@@ -108,7 +100,6 @@ st.title("📊 Dashboard Interactivo de Albaranes")
 st.markdown("Panel de control económico con desglose por Cocina, Sala y Otros, actualizado en tiempo real.")
 st.markdown("---")
 
-# Métricas calculadas sobre el dataset filtrado
 total_registros_total = len(df)
 total_registros_filtro = len(df_filtrado)
 
@@ -147,16 +138,16 @@ with g1:
         st.warning("No hay datos de proveedores para los filtros seleccionados.")
 
 with g2:
-    st.markdown("#### 📈 Evolución Temporal")
-    if col_fecha and col_total and not df_filtrado.empty:
-        df_t = df_filtrado.groupby(df_filtrado[col_fecha].dt.date, as_index=False)[col_total].sum()
-        fig_t = px.bar(
-            df_t, 
-            x=col_fecha, 
+    st.markdown("#### 📈 Evolución por Mes")
+    if col_mes and col_total and not df_filtrado.empty:
+        df_m = df_filtrado.groupby(col_mes, as_index=False)[col_total].sum()
+        fig_m = px.bar(
+            df_m, 
+            x=col_mes, 
             y=col_total, 
-            labels={col_total: "Total Facturado (€)", col_fecha: "Fecha"},
+            labels={col_total: "Total Facturado (€)", col_mes: "Mes"},
             template="plotly_white"
         )
-        st.plotly_chart(fig_t, use_container_width=True)
+        st.plotly_chart(fig_m, use_container_width=True)
     else:
         st.warning("No hay datos temporales disponibles para graficar con los filtros actuales.")
