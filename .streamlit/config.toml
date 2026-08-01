@@ -1,0 +1,10 @@
+[theme]
+base = "dark"
+primaryColor = "#D6A13A"
+backgroundColor = "#211C17"
+secondaryBackgroundColor = "#2B241D"
+textColor = "#F7F1E3"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+headingFont = "'Zilla Slab':https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&display=swap, serif"
+codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap, monospace"
+chartCategoricalColors = ["#BE5A2E", "#6F7A46", "#D6A13A", "#8C3F35"]
