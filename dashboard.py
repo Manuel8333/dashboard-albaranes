@@ -1,12 +1,11 @@
 import json
-import pandas as pd
 import streamlit as st
 
 st.set_page_config(
     page_title="Control de Albaranes", page_icon="📋", layout="wide"
 )
 
-# Datos reales incrustados para garantizar que carguen al 100% sin errores
+# Datos completos reales de enero a julio de 2026[cite: 1]
 RAW_DATA = [
     {
         "tipo": "Otros",
@@ -701,876 +700,5511 @@ RAW_DATA = [
         "total": 71.61,
         "comentario": "",
     },
-]
-
-html_code = """
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comanda — Control de Albaranes</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<style>
-  :root{
-    --ink:#211C17;
-    --ink-2:#2B241D;
-    --paper:#F7F1E3;
-    --paper-2:#EFE6D0;
-    --copper:#BE5A2E;
-    --olive:#6F7A46;
-    --mustard:#D6A13A;
-    --rust:#8C3F35;
-    --muted:#C9BFAE;
-    --muted-2:#8C8271;
-    --line:#3A322888;
-    --good:#6F7A46;
-    --bad:#8C3F35;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Inter',sans-serif;
-    -webkit-font-smoothing:antialiased;
-    min-height:100vh;
-  }
-  .wrap{
-    max-width:1240px;
-    margin:0 auto;
-    padding:28px 20px 80px;
-  }
-  .masthead{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    flex-wrap:wrap;
-    gap:14px;
-    padding-bottom:22px;
-    margin-bottom:26px;
-    border-bottom:2px dashed var(--line);
-    position:relative;
-  }
-  .masthead::before{
-    content:"";
-    position:absolute;
-    left:0; top:-8px;
-    width:10px; height:10px;
-    border-radius:50%;
-    background:var(--ink);
-    box-shadow: 0 0 0 2px var(--line);
-  }
-  .eyebrow{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-    color:var(--mustard);
-    margin:0 0 6px;
-  }
-  h1{
-    font-family:'Zilla Slab',serif;
-    font-weight:700;
-    font-size:clamp(28px,4.5vw,42px);
-    margin:0;
-    letter-spacing:-.01em;
-    color:var(--paper);
-  }
-  .subtitle{
-    font-size:13px;
-    color:var(--muted);
-    margin-top:6px;
-    max-width:520px;
-  }
-  .meta-badge{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    color:var(--ink);
-    background:var(--paper);
-    padding:9px 14px;
-    border-radius:3px;
-    text-align:right;
-    line-height:1.5;
-  }
-  .meta-badge b{display:block;font-size:13px;color:var(--copper);}
-  .rail{
-    position:relative;
-    margin-bottom:34px;
-  }
-  .rail-line{
-    position:absolute;
-    top:14px; left:0; right:0;
-    height:2px;
-    background:repeating-linear-gradient(90deg, var(--muted-2) 0 10px, transparent 10px 18px);
-    opacity:.5;
-  }
-  .tickets{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:18px;
-    position:relative;
-  }
-  .ticket{
-    background:var(--paper);
-    color:var(--ink);
-    border-radius:2px;
-    padding:22px 18px 18px;
-    position:relative;
-    box-shadow:0 10px 24px -12px rgba(0,0,0,.55);
-    transform:rotate(var(--tilt,0deg));
-    transition:transform .25s ease;
-  }
-  .ticket:hover{ transform:rotate(0deg) translateY(-3px); }
-  .ticket:nth-child(1){--tilt:-0.6deg;}
-  .ticket:nth-child(2){--tilt:0.4deg;}
-  .ticket:nth-child(3){--tilt:-0.3deg;}
-  .ticket:nth-child(4){--tilt:0.6deg;}
-  .clip{
-    position:absolute;
-    top:-15px; left:50%;
-    transform:translateX(-50%);
-    width:16px; height:16px;
-    border-radius:50%;
-    background:var(--ink);
-    box-shadow:0 0 0 3px var(--ink), inset 0 0 0 2px var(--paper-2);
-  }
-  .ticket::after{
-    content:"";
-    position:absolute;
-    bottom:-1px; left:12px; right:12px;
-    height:8px;
-    background-image: radial-gradient(circle at 6px 0, transparent 4px, var(--ink) 4px);
-    background-size:12px 8px;
-    background-repeat:repeat-x;
-  }
-  .ticket-label{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10.5px;
-    letter-spacing:.1em;
-    text-transform:uppercase;
-    color:var(--muted-2);
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
-  .ticket-value{
-    font-family:'Zilla Slab',serif;
-    font-weight:700;
-    font-size:clamp(20px,2.6vw,27px);
-    margin:8px 0 2px;
-    color:var(--ink);
-    letter-spacing:-.01em;
-  }
-  .ticket-sub{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    color:var(--muted-2);
-  }
-  .filters{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    align-items:center;
-    margin-bottom:24px;
-    padding:14px 16px;
-    background:var(--ink-2);
-    border:1px solid var(--line);
-    border-radius:8px;
-  }
-  .chip{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    padding:7px 13px;
-    border-radius:20px;
-    border:1px solid var(--line);
-    background:transparent;
-    color:var(--muted);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    gap:7px;
-    transition:.15s;
-    user-select:none;
-  }
-  .chip:hover{border-color:var(--muted-2);color:var(--paper);}
-  .chip.active{
-    background:var(--paper);
-    color:var(--ink);
-    border-color:var(--paper);
-    font-weight:600;
-  }
-  .search-wrap{
-    margin-left:auto;
-    position:relative;
-    flex:1 1 220px;
-    max-width:280px;
-  }
-  #search{
-    width:100%;
-    background:var(--ink);
-    border:1px solid var(--line);
-    color:var(--paper);
-    padding:8px 12px 8px 30px;
-    border-radius:20px;
-    font-family:'Inter',sans-serif;
-    font-size:13px;
-    outline:none;
-  }
-  #search:focus{border-color:var(--mustard);}
-  .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5;}
-  select#monthSel{
-    background:var(--ink);
-    border:1px solid var(--line);
-    color:var(--paper);
-    padding:8px 12px;
-    border-radius:20px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    outline:none;
-    cursor:pointer;
-  }
-  .results-count{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    color:var(--muted-2);
-    white-space:nowrap;
-  }
-  .grid2{
-    display:grid;
-    grid-template-columns:1.15fr 1fr;
-    gap:18px;
-    margin-bottom:18px;
-  }
-  .panel{
-    background:var(--ink-2);
-    border:1px solid var(--line);
-    border-radius:8px;
-    padding:20px;
-  }
-  .panel-title{
-    font-family:'Zilla Slab',serif;
-    font-weight:600;
-    font-size:16px;
-    margin:0 0 4px;
-    color:var(--paper);
-  }
-  .panel-sub{
-    font-size:11.5px;
-    color:var(--muted-2);
-    margin-bottom:14px;
-    font-family:'IBM Plex Mono',monospace;
-  }
-  .chart-box{position:relative;height:260px;}
-  .chart-box.tall{height:320px;}
-  .legend-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
-  .legend-row{display:flex;align-items:center;gap:9px;font-size:12.5px;}
-  .legend-row .dot{width:9px;height:9px;flex:none;}
-  .legend-row .lname{color:var(--paper);flex:1;}
-  .legend-row .lval{font-family:'IBM Plex Mono',monospace;color:var(--muted);}
-  .provrow{
-    display:grid;
-    grid-template-columns:26px 1fr 90px;
-    align-items:center;
-    gap:10px;
-    padding:8px 0;
-    border-bottom:1px solid var(--line);
-    font-size:12.5px;
-  }
-  .provrow:last-child{border-bottom:none;}
-  .provrank{font-family:'IBM Plex Mono',monospace;color:var(--muted-2);font-size:11px;}
-  .provname{color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .provbar-track{background:var(--ink);border-radius:3px;height:6px;margin-top:5px;overflow:hidden;}
-  .provbar-fill{height:100%;background:var(--copper);border-radius:3px;}
-  .provval{font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:right;}
-  .table-panel{margin-top:18px;}
-  .table-scroll{
-    max-height:480px;
-    overflow-y:auto;
-    border-radius:6px;
-    border:1px solid var(--line);
-  }
-  table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  thead th{
-    position:sticky; top:0;
-    background:var(--ink);
-    text-align:left;
-    padding:10px 12px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10.5px;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--muted-2);
-    border-bottom:1px solid var(--line);
-    cursor:pointer;
-    white-space:nowrap;
-  }
-  thead th:hover{color:var(--mustard);}
-  thead th.num{text-align:right;}
-  tbody td{
-    padding:9px 12px;
-    border-bottom:1px solid var(--line);
-    color:var(--muted);
-    white-space:nowrap;
-  }
-  tbody td.num{text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--paper);}
-  tbody td.neg{color:var(--rust);}
-  tbody tr:hover td{background:var(--ink-2);}
-  tbody td.provname{color:var(--paper);max-width:220px;overflow:hidden;text-overflow:ellipsis;}
-  .tipo-tag{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;
-    padding:3px 8px;
-    border-radius:10px;
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-  }
-  .empty-state{
-    text-align:center;
-    padding:50px 20px;
-    color:var(--muted-2);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:13px;
-  }
-  footer{
-    text-align:center;
-    margin-top:34px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10.5px;
-    color:var(--muted-2);
-    letter-spacing:.05em;
-  }
-  tbody tr{cursor:pointer;}
-  .modal-overlay{
-    position:fixed; inset:0;
-    background:rgba(15,12,9,.72);
-    backdrop-filter:blur(2px);
-    display:flex; align-items:center; justify-content:center;
-    z-index:100;
-    padding:24px;
-    opacity:0; pointer-events:none;
-    transition:opacity .18s ease;
-  }
-  .modal-overlay.open{opacity:1; pointer-events:all;}
-  .receipt{
-    background:var(--paper);
-    color:var(--ink);
-    width:100%;
-    max-width:360px;
-    border-radius:2px;
-    padding:26px 24px 22px;
-    position:relative;
-    box-shadow:0 30px 60px -20px rgba(0,0,0,.7);
-    transform:translateY(14px) scale(.98);
-    transition:transform .2s ease;
-    font-family:'IBM Plex Mono',monospace;
-    max-height:88vh;
-    overflow-y:auto;
-  }
-  .modal-overlay.open .receipt{transform:translateY(0) scale(1);}
-  .receipt::before{
-    content:"";
-    position:absolute; top:-1px; left:12px; right:12px; height:8px;
-    background-image: radial-gradient(circle at 6px 8px, transparent 4px, var(--ink) 4px);
-    background-size:12px 8px; background-repeat:repeat-x;
-  }
-  .receipt::after{
-    content:"";
-    position:absolute; bottom:-1px; left:12px; right:12px; height:8px;
-    background-image: radial-gradient(circle at 6px 0, transparent 4px, var(--ink) 4px);
-    background-size:12px 8px; background-repeat:repeat-x;
-  }
-  .receipt-close{
-    position:absolute; top:14px; right:14px;
-    width:26px; height:26px;
-    border:none; background:transparent;
-    color:var(--muted-2); cursor:pointer;
-    font-size:16px; line-height:1;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .receipt-close:hover{color:var(--ink);}
-  .receipt-eyebrow{
-    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--muted-2); text-align:center; margin:6px 0 2px;
-  }
-  .receipt-title{
-    font-family:'Zilla Slab',serif; font-weight:700;
-    font-size:19px; text-align:center; color:var(--ink);
-    margin:0 0 2px; line-height:1.25;
-  }
-  .receipt-tag{
-    display:flex; justify-content:center; margin:8px 0 16px;
-  }
-  .receipt-tag span{
-    font-size:10.5px; padding:4px 12px; border-radius:12px;
-    display:inline-flex; align-items:center; gap:6px;
-    text-transform:uppercase; letter-spacing:.06em;
-  }
-  .receipt-divider{
-    border:none; border-top:1px dashed #B8AD90; margin:14px 0;
-  }
-  .receipt-row{
-    display:flex; justify-content:space-between; align-items:baseline;
-    font-size:12.5px; padding:5px 0; color:#5A5140;
-  }
-  .receipt-row span:last-child{color:var(--ink); font-weight:600; text-align:right;}
-  .receipt-total-row{
-    display:flex; justify-content:space-between; align-items:baseline;
-    padding:12px 0 4px; margin-top:4px;
-  }
-  .receipt-total-row .rt-label{font-size:12px; color:var(--muted-2); text-transform:uppercase; letter-spacing:.08em;}
-  .receipt-total-row .rt-value{font-family:'Zilla Slab',serif; font-weight:700; font-size:24px; color:var(--ink);}
-  .receipt-total-row .rt-value.neg{color:var(--rust);}
-  .receipt-comment{
-    margin-top:14px; padding:12px; background:var(--paper-2);
-    border-radius:4px; font-family:'Inter',sans-serif;
-    font-size:12px; color:#5A5140; line-height:1.5;
-  }
-  .receipt-comment b{
-    display:block; font-family:'IBM Plex Mono',monospace;
-    font-size:9.5px; text-transform:uppercase; letter-spacing:.1em;
-    color:var(--muted-2); margin-bottom:4px; font-weight:600;
-  }
-  .receipt-barcode{
-    margin-top:18px; height:36px;
-    background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 5px, var(--ink) 5px 6px, transparent 6px 10px);
-    opacity:.85;
-  }
-  .receipt-foot{
-    text-align:center; font-size:9.5px; color:var(--muted-2);
-    margin-top:8px; letter-spacing:.08em;
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="masthead">
-    <div>
-      <p class="eyebrow">Restaurante Caná · La Moraleja</p>
-      <h1>Control de Albaranes</h1>
-      <p class="subtitle">Panel de control económico interactivo actualizado en tiempo real.</p>
-    </div>
-    <div class="meta-badge">
-      <b id="rangeLabel">—</b>
-      periodo analizado
-    </div>
-  </div>
-
-  <div class="rail">
-    <div class="rail-line"></div>
-    <div class="tickets" id="ticketRail"></div>
-  </div>
-
-  <div class="filters">
-    <button class="chip active" data-tipo="Todos"><span class="dot" style="background:var(--paper)"></span>Todos</button>
-    <button class="chip" data-tipo="Cocina"><span class="dot" style="background:var(--copper)"></span>Cocina</button>
-    <button class="chip" data-tipo="Sala"><span class="dot" style="background:var(--olive)"></span>Sala</button>
-    <button class="chip" data-tipo="Otros"><span class="dot" style="background:var(--mustard)"></span>Otros</button>
-    <button class="chip" data-tipo="Extras"><span class="dot" style="background:var(--rust)"></span>Extras</button>
-    <select id="monthSel">
-      <option value="Todos">Todos los meses</option>
-    </select>
-    <div class="search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9BFAE" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="search" placeholder="Buscar proveedor o nº albarán…">
-    </div>
-    <span class="results-count" id="resultsCount"></span>
-  </div>
-
-  <div class="grid2">
-    <div class="panel">
-      <p class="panel-title">Evolución mensual</p>
-      <p class="panel-sub">Gasto total por mes, desglosado por área</p>
-      <div class="chart-box tall"><canvas id="trendChart"></canvas></div>
-    </div>
-    <div class="panel">
-      <p class="panel-title">Distribución por área</p>
-      <p class="panel-sub">% del gasto filtrado</p>
-      <div class="chart-box"><canvas id="donutChart"></canvas></div>
-      <div class="legend-list" id="donutLegend"></div>
-    </div>
-  </div>
-
-  <div class="grid2" style="grid-template-columns:1fr 1fr;">
-    <div class="panel">
-      <p class="panel-title">Principales proveedores</p>
-      <p class="panel-sub">Top 8 por importe total (según filtro activo)</p>
-      <div id="provList"></div>
-    </div>
-    <div class="panel">
-      <p class="panel-title">Tickets por semana</p>
-      <p class="panel-sub">Volumen de albaranes registrados</p>
-      <div class="chart-box"><canvas id="weekChart"></canvas></div>
-    </div>
-  </div>
-
-  <div class="panel table-panel">
-    <p class="panel-title">Detalle de albaranes</p>
-    <p class="panel-sub">Haz clic en una columna para ordenar</p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th data-sort="fecha">Fecha</th>
-            <th data-sort="tipo">Área</th>
-            <th data-sort="proveedor">Proveedor</th>
-            <th data-sort="albaran">Nº Albarán</th>
-            <th data-sort="importe" class="num">Base</th>
-            <th data-sort="iva" class="num">IVA</th>
-            <th data-sort="total" class="num">Total</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <footer>Control de Albaranes · Panel interactivo Streamlit</footer>
-</div>
-
-<div class="modal-overlay" id="modalOverlay">
-  <div class="receipt" id="receiptCard" role="dialog" aria-modal="true">
-    <button class="receipt-close" id="receiptClose" aria-label="Cerrar">✕</button>
-    <div id="receiptContent"></div>
-  </div>
-</div>
-
-<script id="raw-data" type="application/json">
-/*INJECT_JSON_HERE*/
-</script>
-
-<script>
-(function(){
-  const RAW = JSON.parse(document.getElementById('raw-data').textContent);
-  const COLORS = {Cocina:'#BE5A2E', Sala:'#6F7A46', Otros:'#D6A13A', Extras:'#8C3F35'};
-  const fmtEUR = (n) => n.toLocaleString('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
-  const fmtEUR2 = (n) => n.toLocaleString('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
-  const fmtDate = (iso) => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
-  const monthKey = (iso) => iso ? iso.slice(0,7) : '';
-  const MONTH_NAMES = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
-
-  let state = { tipo:'Todos', month:'Todos', search:'', sortKey:'fecha', sortDir:-1 };
-
-  const months = [...new Set(RAW.map(r=>monthKey(r.fecha)).filter(Boolean))].sort();
-  const monthSel = document.getElementById('monthSel');
-  months.forEach(m=>{
-    const [y,mm]=m.split('-');
-    const opt = document.createElement('option');
-    opt.value = m;
-    opt.textContent = `${MONTH_NAMES[mm] || mm} ${y}`;
-    monthSel.appendChild(opt);
-  });
-
-  if(RAW.length > 0){
-    const dates = RAW.map(r=>r.fecha).filter(Boolean).sort();
-    if(dates.length) document.getElementById('rangeLabel').textContent = `${fmtDate(dates[0])} → ${fmtDate(dates[dates.length-1])}`;
-  }
-
-  function getFiltered(){
-    return RAW.filter(r=>{
-      if(state.tipo !== 'Todos' && r.tipo !== state.tipo) return false;
-      if(state.month !== 'Todos' && monthKey(r.fecha) !== state.month) return false;
-      if(state.search){
-        const s = state.search.toLowerCase();
-        const prov = (r.proveedor || '').toLowerCase();
-        const alb = String(r.albaran || '').toLowerCase();
-        if(!prov.includes(s) && !alb.includes(s)) return false;
-      }
-      return true;
-    });
-  }
-
-  let trendChart, donutChart, weekChart;
-
-  function render(){
-    const data = getFiltered();
-    renderTickets(data);
-    renderDonut(data);
-    renderTrend(data);
-    renderWeek(data);
-    renderProviders(data);
-    renderTable(data);
-    document.getElementById('resultsCount').textContent = `Mostrando ${data.length} de ${RAW.length} registros`;
-  }
-
-  function renderTickets(data){
-    const total = data.reduce((a,r)=>a+(r.total||0),0);
-    const byTipo = {Cocina:0,Sala:0,Otros:0,Extras:0};
-    data.forEach(r=> { if(byTipo[r.tipo] !== undefined) byTipo[r.tipo] += (r.total||0); });
-    const otrosExtras = byTipo.Otros + byTipo.Extras;
-
-    const cards = [
-      {label:'Total facturado', value: total, sub: `${data.length} albaranes`, color:'#211C17'},
-      {label:'Gasto Cocina', value: byTipo.Cocina, sub: total? `${(byTipo.Cocina/total*100).toFixed(0)}% del total`:'—', color:COLORS.Cocina},
-      {label:'Gasto Sala', value: byTipo.Sala, sub: total? `${(byTipo.Sala/total*100).toFixed(0)}% del total`:'—', color:COLORS.Sala},
-      {label:'Eventos y Otros', value: otrosExtras, sub: total? `${(otrosExtras/total*100).toFixed(0)}% del total`:'—', color:COLORS.Otros},
-    ];
-
-    const rail = document.getElementById('ticketRail');
-    rail.innerHTML = cards.map(c=>`
-      <div class="ticket">
-        <div class="clip"></div>
-        <div class="ticket-label"><span class="dot" style="background:${c.color}"></span>${c.label}</div>
-        <div class="ticket-value">${fmtEUR(c.value)}</div>
-        <div class="ticket-sub">${c.sub}</div>
-      </div>
-    `).join('');
-  }
-
-  function renderDonut(data){
-    const byTipo = {Cocina:0,Sala:0,Otros:0,Extras:0};
-    data.forEach(r=> { if(byTipo[r.tipo] !== undefined) byTipo[r.tipo] += (r.total||0); });
-    const total = Object.values(byTipo).reduce((a,b)=>a+b,0) || 1;
-    const labels = Object.keys(byTipo);
-    const values = labels.map(l=>byTipo[l]);
-    const colors = labels.map(l=>COLORS[l]);
-
-    const ctx = document.getElementById('donutChart').getContext('2d');
-    if(donutChart) donutChart.destroy();
-    donutChart = new Chart(ctx, {
-      type:'doughnut',
-      data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderColor:'#2B241D', borderWidth:3, hoverOffset:6 }] },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        cutout:'68%',
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> ` ${c.label}: ${fmtEUR2(c.raw)}` } } }
-      }
-    });
-
-    const legend = document.getElementById('donutLegend');
-    legend.innerHTML = labels.map((l,i)=>`
-      <div class="legend-row">
-        <span class="dot" style="background:${colors[i]}"></span>
-        <span class="lname">${l}</span>
-        <span class="lval">${total? (values[i]/total*100).toFixed(1):'0.0'}% · ${fmtEUR2(values[i])}</span>
-      </div>
-    `).join('');
-  }
-
-  function renderTrend(data){
-    const grouped = {};
-    data.forEach(r=>{
-      if(!r.fecha) return;
-      const mk = monthKey(r.fecha);
-      grouped[mk] = grouped[mk] || {Cocina:0,Sala:0,Otros:0,Extras:0};
-      if(grouped[mk][r.tipo] !== undefined) grouped[mk][r.tipo] += (r.total||0);
-    });
-    const keys = Object.keys(grouped).sort();
-    const labels = keys.map(k=>{ const [y,m]=k.split('-'); return `${MONTH_NAMES[m] || m}`; });
-
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if(trendChart) trendChart.destroy();
-    trendChart = new Chart(ctx, {
-      type:'bar',
-      data:{
-        labels,
-        datasets:['Cocina','Sala','Otros','Extras'].map(tipo=>({
-          label: tipo,
-          data: keys.map(k=>grouped[k][tipo]),
-          backgroundColor: COLORS[tipo],
-          borderRadius: 3,
-          maxBarThickness: 34
-        }))
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        scales:{
-          x:{ stacked:true, grid:{display:false}, ticks:{ color:'#C9BFAE', font:{family:'IBM Plex Mono',size:11}} },
-          y:{ stacked:true, grid:{ color:'#3A322855' }, ticks:{ color:'#C9BFAE', font:{family:'IBM Plex Mono',size:10}, callback:(v)=>fmtEUR(v) } }
-        },
-        plugins:{
-          legend:{ position:'top', align:'end', labels:{ color:'#C9BFAE', boxWidth:9, boxHeight:9, font:{family:'Inter',size:11.5}} },
-          tooltip:{ callbacks:{ label:(c)=> ` ${c.dataset.label}: ${fmtEUR2(c.raw)}` } }
-        }
-      }
-    });
-  }
-
-  function renderWeek(data){
-    function isoWeek(dStr){
-      const dt = new Date(dStr);
-      if(isNaN(dt)) return '2026-W01';
-      const target = new Date(dt.valueOf());
-      const dayNr = (dt.getUTCDay()+6)%7;
-      target.setUTCDate(target.getUTCDate()-dayNr+3);
-      const firstThursday = new Date(Date.UTC(target.getUTCFullYear(),0,4));
-      const diff = (target - firstThursday)/86400000;
-      const week = 1 + Math.round(diff/7);
-      return `${target.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
-    }
-    const grouped = {};
-    data.forEach(r=>{
-      if(!r.fecha) return;
-      const wk = isoWeek(r.fecha);
-      grouped[wk] = (grouped[wk]||0)+1;
-    });
-    const keys = Object.keys(grouped).sort();
-    const labels = keys.map(k=>k.split('-W')[1] || k);
-
-    const ctx = document.getElementById('weekChart').getContext('2d');
-    if(weekChart) weekChart.destroy();
-    weekChart = new Chart(ctx, {
-      type:'line',
-      data:{
-        labels,
-        datasets:[{
-          data: keys.map(k=>grouped[k]),
-          borderColor:'#D6A13A',
-          backgroundColor:'rgba(214,161,58,0.15)',
-          fill:true,
-          tension:0.35,
-          pointRadius:0,
-          pointHoverRadius:4,
-          borderWidth:2
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        scales:{
-          x:{ grid:{display:false}, ticks:{ color:'#8C8271', font:{family:'IBM Plex Mono',size:9}, maxTicksLimit:12 } },
-          y:{ grid:{ color:'#3A322855' }, ticks:{ color:'#8C8271', font:{family:'IBM Plex Mono',size:10}, precision:0 } }
-        },
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ title:(c)=>`Semana ${c[0].label}`, label:(c)=>` ${c.raw} albaranes` } } }
-      }
-    });
-  }
-
-  function renderProviders(data){
-    const byProv = {};
-    data.forEach(r=>{ const p = r.proveedor || 'Desconocido'; byProv[p] = (byProv[p]||0) + (r.total||0); });
-    const sorted = Object.entries(byProv).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const max = sorted.length? sorted[0][1] : 1;
-
-    const list = document.getElementById('provList');
-    if(!sorted.length){
-      list.innerHTML = `<div class="empty-state">Sin resultados para este filtro</div>`;
-      return;
-    }
-    list.innerHTML = sorted.map(([name,val],i)=>`
-      <div class="provrow">
-        <div class="provrank">${String(i+1).padStart(2,'0')}</div>
-        <div>
-          <div class="provname">${name}</div>
-          <div class="provbar-track"><div class="provbar-fill" style="width:${(val/max*100).toFixed(1)}%"></div></div>
-        </div>
-        <div class="provval">${fmtEUR2(val)}</div>
-      </div>
-    `).join('');
-  }
-
-  function renderTable(data){
-    const sorted = [...data].sort((a,b)=>{
-      const k = state.sortKey;
-      let av=a[k], bv=b[k];
-      if(av === undefined || av === null) av = '';
-      if(bv === undefined || bv === null) bv = '';
-      if(typeof av === 'string'){ av=av.toLowerCase(); bv=bv.toLowerCase(); }
-      if(av<bv) return -1*state.sortDir;
-      if(av>bv) return 1*state.sortDir;
-      return 0;
-    });
-    const body = document.getElementById('tableBody');
-    if(!sorted.length){
-      body.innerHTML = `<tr><td colspan="7"><div class="empty-state">No hay albaranes que coincidan con la búsqueda</div></td></tr>`;
-      return;
-    }
-    body.innerHTML = sorted.map((r,i)=>`
-      <tr data-idx="${i}">
-        <td>${fmtDate(r.fecha)}</td>
-        <td><span class="tipo-tag" style="background:${COLORS[r.tipo]||'#8C8271'}22;color:${COLORS[r.tipo]||'#8C8271'}"><span class="dot" style="width:6px;height:6px;background:${COLORS[r.tipo]||'#8C8271'}"></span>${r.tipo || '—'}</span></td>
-        <td class="provname">${r.proveedor || '—'}</td>
-        <td>${r.albaran || '—'}</td>
-        <td class="num ${(r.importe||0)<0?'neg':''}">${fmtEUR2(r.importe||0)}</td>
-        <td class="num ${(r.iva||0)<0?'neg':''}">${fmtEUR2(r.iva||0)}</td>
-        <td class="num ${(r.total||0)<0?'neg':''}">${fmtEUR2(r.total||0)}</td>
-      </tr>
-    `).join('');
-
-    body.querySelectorAll('tr[data-idx]').forEach(tr=>{
-      tr.addEventListener('click', ()=> openReceipt(sorted[+tr.dataset.idx]));
-    });
-  }
-
-  const overlay = document.getElementById('modalOverlay');
-  const receiptContent = document.getElementById('receiptContent');
-
-  function fmtDateLong(iso){
-    if(!iso) return '—';
-    const [y,m,d] = iso.split('-');
-    const MONTH_FULL = {'01':'enero','02':'febrero','03':'marzo','04':'abril','05':'mayo','06':'junio','07':'julio','08':'agosto','09':'septiembre','10':'octubre','11':'noviembre','12':'diciembre'};
-    return `${d} de ${MONTH_FULL[m] || m} de ${y}`;
-  }
-
-  function openReceipt(r){
-    const imp = r.importe || 0;
-    const iva = r.iva || 0;
-    const tot = r.total || 0;
-    const ivaPct = imp !== 0 ? (iva / imp * 100) : 0;
-    const color = COLORS[r.tipo] || '#8C8271';
-    receiptContent.innerHTML = `
-      <p class="receipt-eyebrow">Restaurante Caná · La Moraleja</p>
-      <p class="receipt-title">${r.proveedor || 'Proveedor'}</p>
-      <div class="receipt-tag"><span style="background:${color}22;color:${color}">${r.tipo || '—'}</span></div>
-      <hr class="receipt-divider">
-      <div class="receipt-row"><span>Nº albarán</span><span>${r.albaran || '—'}</span></div>
-      <div class="receipt-row"><span>Fecha</span><span>${fmtDateLong(r.fecha)}</span></div>
-      <div class="receipt-row"><span>Periodo</span><span>${r.periodo || '—'}</span></div>
-      <hr class="receipt-divider">
-      <div class="receipt-row"><span>Base imponible</span><span>${fmtEUR2(imp)}</span></div>
-      <div class="receipt-row"><span>IVA (${ivaPct.toFixed(1)}%)</span><span>${fmtEUR2(iva)}</span></div>
-      <div class="receipt-total-row">
-        <span class="rt-label">Total</span>
-        <span class="rt-value ${tot<0?'neg':''}">${fmtEUR2(tot)}</span>
-      </div>
-      ${r.comentario ? `<div class="receipt-comment"><b>Comentario</b>${r.comentario}</div>` : ''}
-      <div class="receipt-barcode"></div>
-      <p class="receipt-foot">*** GRACIAS ***</p>
-    `;
-    overlay.classList.add('open');
-  }
-
-  function closeReceipt(){ overlay.classList.remove('open'); }
-
-  document.getElementById('receiptClose').addEventListener('click', closeReceipt);
-  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeReceipt(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeReceipt(); });
-
-  document.querySelectorAll('.chip').forEach(chip=>{
-    chip.addEventListener('click', ()=>{
-      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
-      state.tipo = chip.dataset.tipo;
-      render();
-    });
-  });
-
-  monthSel.addEventListener('change', (e)=>{ state.month = e.target.value; render(); });
-
-  let searchTimeout;
-  document.getElementById('search').addEventListener('input', (e)=>{
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(()=>{ state.search = e.target.value.trim(); render(); }, 150);
-  });
-
-  document.querySelectorAll('thead th[data-sort]').forEach(th=>{
-    th.addEventListener('click', ()=>{
-      const key = th.dataset.sort;
-      if(state.sortKey === key){ state.sortDir *= -1; }
-      else { state.sortKey = key; state.sortDir = key==='fecha' ? -1 : 1; }
-      renderTable(getFiltered());
-    });
-  });
-
-  render();
-})();
-</script>
-</body>
-</html>
-"""
-
-html_code = html_code.replace("/*INJECT_JSON_HERE*/", json.dumps(RAW_DATA))
-st.components.v1.html(html_code, height=1400, scrolling=True)
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000164",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 260.64,
+        "iva": 21.93,
+        "total": 282.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000412",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 331.39,
+        "iva": 33.14,
+        "total": 364.53,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20844687",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 38.92,
+        "iva": 1.56,
+        "total": 40.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20844684",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 426.8,
+        "iva": 77.06,
+        "total": 503.86,
+        "comentario": "Añadido  6 anvases agua 1/2 y envases tónica",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "236",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 240.23,
+        "iva": 50.45,
+        "total": 290.68,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "230",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 1253.04,
+        "iva": 263.14,
+        "total": 1516.18,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "222",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 907.32,
+        "iva": 190.54,
+        "total": 1097.86,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "228",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 212.74,
+        "iva": 44.68,
+        "total": 257.42,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "239",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 304.96,
+        "iva": 64.04,
+        "total": 369.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13890",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 155.16,
+        "iva": 6.42,
+        "total": 161.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "526948",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 51.0,
+        "iva": 5.1,
+        "total": 56.1,
+        "comentario": "Eliminada mantequilla",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "4171",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 370.32,
+        "iva": 29.61,
+        "total": 399.93,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "4172",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 102.0,
+        "iva": 4.08,
+        "total": 106.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1452",
+        "fecha": "2026-02-02",
+        "periodo": "FEBRERO",
+        "importe": 112.6,
+        "iva": 11.26,
+        "total": 123.86,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "86",
+        "fecha": "2026-02-04",
+        "periodo": "FEBRERO",
+        "importe": 60.4,
+        "iva": 6.04,
+        "total": 66.44,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "260",
+        "fecha": "2026-02-04",
+        "periodo": "FEBRERO",
+        "importe": 78.25,
+        "iva": 16.43,
+        "total": 94.68,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "258",
+        "fecha": "2026-02-04",
+        "periodo": "FEBRERO",
+        "importe": 443.81,
+        "iva": 93.2,
+        "total": 537.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "40226",
+        "fecha": "2026-02-04",
+        "periodo": "FEBRERO",
+        "importe": 91.94,
+        "iva": 19.3,
+        "total": 111.24,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "DSV",
+        "fecha": "2026-02-05",
+        "periodo": "FEBRERO",
+        "importe": 498.96,
+        "iva": 104.78,
+        "total": 603.74,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "748",
+        "fecha": "2026-02-05",
+        "periodo": "FEBRERO",
+        "importe": 14.35,
+        "iva": 1.44,
+        "total": 15.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "762",
+        "fecha": "2026-02-05",
+        "periodo": "FEBRERO",
+        "importe": 45.6,
+        "iva": 4.56,
+        "total": 50.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000497",
+        "fecha": "2026-02-06",
+        "periodo": "FEBRERO",
+        "importe": 271.45,
+        "iva": 27.15,
+        "total": 298.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601060",
+        "fecha": "2026-02-06",
+        "periodo": "FEBRERO",
+        "importe": 187.42,
+        "iva": 18.74,
+        "total": 206.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000527",
+        "fecha": "2026-02-07",
+        "periodo": "FEBRERO",
+        "importe": 271.17,
+        "iva": 27.12,
+        "total": 298.29,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13972",
+        "fecha": "2026-02-07",
+        "periodo": "FEBRERO",
+        "importe": 120.97,
+        "iva": 4.84,
+        "total": 125.81,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000517",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 75.03,
+        "iva": 7.49,
+        "total": 82.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "282",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 149.24,
+        "iva": 31.34,
+        "total": 180.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "295",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 371.82,
+        "iva": 78.08,
+        "total": 449.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "811",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 161.81,
+        "iva": 10.75,
+        "total": 172.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13990",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 84.09,
+        "iva": 4.05,
+        "total": 88.14,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26009413",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 101.8,
+        "iva": 10.18,
+        "total": 111.98,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "90226",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 32.26,
+        "iva": 6.77,
+        "total": 39.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1467",
+        "fecha": "2026-02-09",
+        "periodo": "FEBRERO",
+        "importe": 142.24,
+        "iva": 14.22,
+        "total": 156.46,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26008501",
+        "fecha": "2026-02-10",
+        "periodo": "FEBRERO",
+        "importe": 822.5,
+        "iva": 82.25,
+        "total": 904.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20848141",
+        "fecha": "2026-02-10",
+        "periodo": "FEBRERO",
+        "importe": 366.59,
+        "iva": 70.36,
+        "total": 436.95,
+        "comentario": "Añadido 1 envase barril sin y 2 envases agua 1L",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "303",
+        "fecha": "2026-02-10",
+        "periodo": "FEBRERO",
+        "importe": 2706.21,
+        "iva": 568.3,
+        "total": 3274.51,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26002489",
+        "fecha": "2026-02-10",
+        "periodo": "FEBRERO",
+        "importe": 329.18,
+        "iva": 32.91,
+        "total": 362.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8003965567",
+        "fecha": "2026-02-10",
+        "periodo": "FEBRERO",
+        "importe": 91.62,
+        "iva": 3.66,
+        "total": 95.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000531",
+        "fecha": "2026-02-11",
+        "periodo": "FEBRERO",
+        "importe": 99.76,
+        "iva": 9.98,
+        "total": 109.74,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26010199",
+        "fecha": "2026-02-11",
+        "periodo": "FEBRERO",
+        "importe": 60.84,
+        "iva": 6.08,
+        "total": 66.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26010196",
+        "fecha": "2026-02-11",
+        "periodo": "FEBRERO",
+        "importe": 120.32,
+        "iva": 12.03,
+        "total": 132.35,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000580",
+        "fecha": "2026-02-12",
+        "periodo": "FEBRERO",
+        "importe": 476.26,
+        "iva": 47.62,
+        "total": 523.88,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530279594",
+        "fecha": "2026-02-12",
+        "periodo": "FEBRERO",
+        "importe": 65.56,
+        "iva": 13.77,
+        "total": 79.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14038",
+        "fecha": "2026-02-12",
+        "periodo": "FEBRERO",
+        "importe": 220.07,
+        "iva": 9.02,
+        "total": 229.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "120226",
+        "fecha": "2026-02-12",
+        "periodo": "FEBRERO",
+        "importe": 49.96,
+        "iva": 10.49,
+        "total": 60.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "114",
+        "fecha": "2026-02-13",
+        "periodo": "FEBRERO",
+        "importe": 46.5,
+        "iva": 4.65,
+        "total": 51.15,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18268",
+        "fecha": "2026-02-13",
+        "periodo": "FEBRERO",
+        "importe": 114.0,
+        "iva": 23.94,
+        "total": 137.94,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20850132",
+        "fecha": "2026-02-13",
+        "periodo": "FEBRERO",
+        "importe": 41.98,
+        "iva": 4.2,
+        "total": 46.18,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "328",
+        "fecha": "2026-02-13",
+        "periodo": "FEBRERO",
+        "importe": 250.82,
+        "iva": 52.67,
+        "total": 303.49,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000605",
+        "fecha": "2026-02-14",
+        "periodo": "FEBRERO",
+        "importe": 284.75,
+        "iva": 21.63,
+        "total": 306.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601303",
+        "fecha": "2026-02-14",
+        "periodo": "FEBRERO",
+        "importe": 155.94,
+        "iva": 15.59,
+        "total": 171.53,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14078",
+        "fecha": "2026-02-14",
+        "periodo": "FEBRERO",
+        "importe": 148.53,
+        "iva": 8.78,
+        "total": 157.31,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000621",
+        "fecha": "2026-02-16",
+        "periodo": "FEBRERO",
+        "importe": 345.84,
+        "iva": 31.61,
+        "total": 377.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "341",
+        "fecha": "2026-02-16",
+        "periodo": "FEBRERO",
+        "importe": 135.16,
+        "iva": 28.38,
+        "total": 163.54,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "349",
+        "fecha": "2026-02-16",
+        "periodo": "FEBRERO",
+        "importe": 575.05,
+        "iva": 120.76,
+        "total": 695.81,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "986",
+        "fecha": "2026-02-16",
+        "periodo": "FEBRERO",
+        "importe": 328.65,
+        "iva": 21.75,
+        "total": 350.4,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14098",
+        "fecha": "2026-02-16",
+        "periodo": "FEBRERO",
+        "importe": 250.55,
+        "iva": 10.02,
+        "total": 260.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530384787",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 126.87,
+        "iva": 26.62,
+        "total": 153.49,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530384784",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 15.02,
+        "iva": 3.18,
+        "total": 18.2,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20851319",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 277.38,
+        "iva": 52.36,
+        "total": 329.74,
+        "comentario": "Añadido 1 envase agua 1L 1 envase agua 1/2  y un envase tercio",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "353",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 61.22,
+        "iva": 12.86,
+        "total": 74.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "358",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 46.0,
+        "iva": 9.66,
+        "total": 55.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8003999292",
+        "fecha": "2026-02-17",
+        "periodo": "FEBRERO",
+        "importe": 219.68,
+        "iva": 10.28,
+        "total": 229.96,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000666",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 597.36,
+        "iva": 59.74,
+        "total": 657.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2040",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 824.86,
+        "iva": 173.22,
+        "total": 998.08,
+        "comentario": "Confirmado por Jose Luis. No tengo albarán",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601396",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 408.44,
+        "iva": 40.84,
+        "total": 449.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1029",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 256.78,
+        "iva": 25.27,
+        "total": 282.05,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14130",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 74.25,
+        "iva": 2.52,
+        "total": 76.77,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "530869",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 178.04,
+        "iva": 17.8,
+        "total": 195.84,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "180226",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 101.44,
+        "iva": 21.3,
+        "total": 122.74,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25140997",
+        "fecha": "2026-02-18",
+        "periodo": "FEBRERO",
+        "importe": 168.95,
+        "iva": 11.26,
+        "total": 180.21,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000678",
+        "fecha": "2026-02-19",
+        "periodo": "FEBRERO",
+        "importe": 281.42,
+        "iva": 26.08,
+        "total": 307.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601446",
+        "fecha": "2026-02-19",
+        "periodo": "FEBRERO",
+        "importe": 174.53,
+        "iva": 17.45,
+        "total": 191.98,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "386",
+        "fecha": "2026-02-19",
+        "periodo": "FEBRERO",
+        "importe": 9.48,
+        "iva": 1.99,
+        "total": 11.47,
+        "comentario": "Guantes TG ¿Otros o Extras?",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "385",
+        "fecha": "2026-02-19",
+        "periodo": "FEBRERO",
+        "importe": 113.04,
+        "iva": 23.74,
+        "total": 136.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601491",
+        "fecha": "2026-02-20",
+        "periodo": "FEBRERO",
+        "importe": 287.05,
+        "iva": 28.71,
+        "total": 315.76,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20853232",
+        "fecha": "2026-02-20",
+        "periodo": "FEBRERO",
+        "importe": 94.83,
+        "iva": 12.99,
+        "total": 107.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14168",
+        "fecha": "2026-02-20",
+        "periodo": "FEBRERO",
+        "importe": 177.54,
+        "iva": 7.76,
+        "total": 185.3,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000719",
+        "fecha": "2026-02-21",
+        "periodo": "FEBRERO",
+        "importe": 209.87,
+        "iva": 16.06,
+        "total": 225.93,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601550",
+        "fecha": "2026-02-21",
+        "periodo": "FEBRERO",
+        "importe": 135.7,
+        "iva": 13.57,
+        "total": 149.27,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14199",
+        "fecha": "2026-02-21",
+        "periodo": "FEBRERO",
+        "importe": 90.5,
+        "iva": 3.62,
+        "total": 94.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000705",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 660.72,
+        "iva": 66.07,
+        "total": 726.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601583",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 165.6,
+        "iva": 16.56,
+        "total": 182.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "396",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 566.34,
+        "iva": 118.93,
+        "total": 685.27,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1176",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 156.98,
+        "iva": 12.02,
+        "total": 169.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14219",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 124.62,
+        "iva": 4.98,
+        "total": 129.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "531779",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 75.95,
+        "iva": 7.6,
+        "total": 83.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "230226",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 40.84,
+        "iva": 8.57,
+        "total": 49.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1493",
+        "fecha": "2026-02-23",
+        "periodo": "FEBRERO",
+        "importe": 66.8,
+        "iva": 7.62,
+        "total": 74.42,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000733",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 40.21,
+        "iva": 4.02,
+        "total": 44.23,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "141",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 146.75,
+        "iva": 14.68,
+        "total": 161.43,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2603288",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 696.23,
+        "iva": 146.21,
+        "total": 842.44,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530576128",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 362.66,
+        "iva": 74.15,
+        "total": 436.81,
+        "comentario": "Añadido 2 cajas VR237",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20854301",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 745.33,
+        "iva": 141.94,
+        "total": 887.27,
+        "comentario": "Añadido 1 env barril 20L, 1 env barril 50L 1 envase agua 1/2, 1 env tercio",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20854302",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 0.0,
+        "iva": 0.0,
+        "total": 0.0,
+        "comentario": "-1 Barril sin Sin coste",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20854303",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 0.0,
+        "iva": 0.0,
+        "total": 0.0,
+        "comentario": "1 Barril sin Sin coste",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Makro (Cocina)",
+        "albaran": "5460",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 25.59,
+        "iva": 2.56,
+        "total": 28.15,
+        "comentario": "Kit Kat",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Makro Extras",
+        "albaran": "5460",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 74.25,
+        "iva": 15.59,
+        "total": 89.84,
+        "comentario": "Platos postre vidrio",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004033368",
+        "fecha": "2026-02-24",
+        "periodo": "FEBRERO",
+        "importe": 123.31,
+        "iva": 4.93,
+        "total": 128.24,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000764",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 223.16,
+        "iva": 22.32,
+        "total": 245.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "COMPRAS COCINA",
+        "albaran": "AMAZON",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 29.69,
+        "iva": 2.97,
+        "total": 32.66,
+        "comentario": "ALMIDON TAPIOCA",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "427",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 85.17,
+        "iva": 17.89,
+        "total": 103.06,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14263",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 133.42,
+        "iva": 5.34,
+        "total": 138.76,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26014117",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 162.64,
+        "iva": 16.26,
+        "total": 178.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "250226",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 152.46,
+        "iva": 32.01,
+        "total": 184.47,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "7962",
+        "fecha": "2026-02-25",
+        "periodo": "FEBRERO",
+        "importe": 380.29,
+        "iva": 23.74,
+        "total": 404.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14272",
+        "fecha": "2026-02-26",
+        "periodo": "FEBRERO",
+        "importe": 93.77,
+        "iva": 3.75,
+        "total": 97.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000786",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 216.74,
+        "iva": 21.67,
+        "total": 238.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601792",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 132.14,
+        "iva": 13.21,
+        "total": 145.35,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1271",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 45.6,
+        "iva": 4.56,
+        "total": 50.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1281",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 104.19,
+        "iva": 7.68,
+        "total": 111.87,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26003654",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 299.25,
+        "iva": 29.93,
+        "total": 329.18,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14292",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 82.5,
+        "iva": 3.44,
+        "total": 85.94,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "270226",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 26.06,
+        "iva": 5.5,
+        "total": 31.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25144172",
+        "fecha": "2026-02-27",
+        "periodo": "FEBRERO",
+        "importe": 102.1,
+        "iva": 6.86,
+        "total": 108.96,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601842",
+        "fecha": "2026-02-28",
+        "periodo": "FEBRERO",
+        "importe": 241.54,
+        "iva": 24.15,
+        "total": 265.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14312",
+        "fecha": "2026-02-28",
+        "periodo": "FEBRERO",
+        "importe": 195.29,
+        "iva": 13.96,
+        "total": 209.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "448",
+        "fecha": "2026-03-01",
+        "periodo": "MARZO",
+        "importe": 673.14,
+        "iva": 141.36,
+        "total": 814.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000807",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 1219.32,
+        "iva": 115.43,
+        "total": 1334.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18369",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 383.4,
+        "iva": 80.51,
+        "total": 463.91,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601879",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 378.76,
+        "iva": 37.88,
+        "total": 416.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26013803",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 708.64,
+        "iva": 70.86,
+        "total": 779.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "455",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 287.63,
+        "iva": 60.4,
+        "total": 348.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14335",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 307.74,
+        "iva": 23.37,
+        "total": 331.11,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "20326",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 34.1,
+        "iva": 7.16,
+        "total": 41.26,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1507",
+        "fecha": "2026-03-02",
+        "periodo": "MARZO",
+        "importe": 96.02,
+        "iva": 9.6,
+        "total": 105.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2603766",
+        "fecha": "2026-03-03",
+        "periodo": "MARZO",
+        "importe": 722.9,
+        "iva": 151.81,
+        "total": 874.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530779106",
+        "fecha": "2026-03-03",
+        "periodo": "MARZO",
+        "importe": 287.74,
+        "iva": 60.43,
+        "total": 348.17,
+        "comentario": "Añadidos envases",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20857627",
+        "fecha": "2026-03-03",
+        "periodo": "MARZO",
+        "importe": 851.02,
+        "iva": 148.5,
+        "total": 999.52,
+        "comentario": "Además 1 envase agua 1/2, 2 barril 50L, 1 envase Schw",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000857",
+        "fecha": "2026-03-04",
+        "periodo": "MARZO",
+        "importe": 393.31,
+        "iva": 36.72,
+        "total": 430.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2601961",
+        "fecha": "2026-03-04",
+        "periodo": "MARZO",
+        "importe": 23.6,
+        "iva": 2.36,
+        "total": 25.96,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Europastry",
+        "albaran": "73192775",
+        "fecha": "2026-03-04",
+        "periodo": "MARZO",
+        "importe": 102.9,
+        "iva": 10.29,
+        "total": 113.19,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "40326",
+        "fecha": "2026-03-04",
+        "periodo": "MARZO",
+        "importe": 122.34,
+        "iva": 25.69,
+        "total": 148.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000874",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 48.86,
+        "iva": 4.89,
+        "total": 53.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602012",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 61.25,
+        "iva": 6.13,
+        "total": 67.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14381",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 120.01,
+        "iva": 5.25,
+        "total": 125.26,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "534502",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 94.75,
+        "iva": 9.48,
+        "total": 104.23,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "9381",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 487.96,
+        "iva": 42.73,
+        "total": 530.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004080232",
+        "fecha": "2026-03-05",
+        "periodo": "MARZO",
+        "importe": 227.26,
+        "iva": 10.57,
+        "total": 237.83,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "183",
+        "fecha": "2026-03-06",
+        "periodo": "MARZO",
+        "importe": 112.8,
+        "iva": 11.28,
+        "total": 124.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602075",
+        "fecha": "2026-03-06",
+        "periodo": "MARZO",
+        "importe": 159.56,
+        "iva": 15.96,
+        "total": 175.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "491",
+        "fecha": "2026-03-06",
+        "periodo": "MARZO",
+        "importe": 438.75,
+        "iva": 92.14,
+        "total": 530.89,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1462",
+        "fecha": "2026-03-06",
+        "periodo": "MARZO",
+        "importe": 37.0,
+        "iva": 1.48,
+        "total": 38.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "60326",
+        "fecha": "2026-03-06",
+        "periodo": "MARZO",
+        "importe": 28.52,
+        "iva": 6.06,
+        "total": 34.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000933",
+        "fecha": "2026-03-07",
+        "periodo": "MARZO",
+        "importe": 189.51,
+        "iva": 18.95,
+        "total": 208.46,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602130",
+        "fecha": "2026-03-07",
+        "periodo": "MARZO",
+        "importe": 57.15,
+        "iva": 5.72,
+        "total": 62.87,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602169",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 93.4,
+        "iva": 9.34,
+        "total": 102.74,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1489",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 110.4,
+        "iva": 6.82,
+        "total": 117.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14453",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 141.67,
+        "iva": 6.02,
+        "total": 147.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "535099",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 132.17,
+        "iva": 12.05,
+        "total": 144.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "90326",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 54.24,
+        "iva": 11.39,
+        "total": 65.63,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "9806",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 224.1,
+        "iva": 14.05,
+        "total": 238.15,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Rubiato Paredes",
+        "albaran": "982540",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 894.4,
+        "iva": 89.44,
+        "total": 983.84,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1524",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 31.0,
+        "iva": 3.1,
+        "total": 34.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1523",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 182.45,
+        "iva": 18.24,
+        "total": 200.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Viena La Baguette",
+        "albaran": "5655",
+        "fecha": "2026-03-09",
+        "periodo": "MARZO",
+        "importe": 25.5,
+        "iva": 1.02,
+        "total": 26.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "194",
+        "fecha": "2026-03-10",
+        "periodo": "MARZO",
+        "importe": 33.05,
+        "iva": 3.31,
+        "total": 36.36,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4530968999",
+        "fecha": "2026-03-10",
+        "periodo": "MARZO",
+        "importe": 181.71,
+        "iva": 38.14,
+        "total": 219.85,
+        "comentario": "Añadir 1 envase VR237",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20860854",
+        "fecha": "2026-03-10",
+        "periodo": "MARZO",
+        "importe": 1136.86,
+        "iva": 209.64,
+        "total": 1346.5,
+        "comentario": "Añadido 2 envase barril 50L 2 envase barril 20 L, 2 envases schw, 2 anvases agua 1L y 2 envase agua 1/2L",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "508",
+        "fecha": "2026-03-10",
+        "periodo": "MARZO",
+        "importe": 354.7,
+        "iva": 74.49,
+        "total": 429.19,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004102043",
+        "fecha": "2026-03-10",
+        "periodo": "MARZO",
+        "importe": 192.21,
+        "iva": 7.69,
+        "total": 199.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000971",
+        "fecha": "2026-03-11",
+        "periodo": "MARZO",
+        "importe": 275.16,
+        "iva": 27.52,
+        "total": 302.68,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14489",
+        "fecha": "2026-03-11",
+        "periodo": "MARZO",
+        "importe": 116.05,
+        "iva": 4.91,
+        "total": 120.96,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "110326",
+        "fecha": "2026-03-11",
+        "periodo": "MARZO",
+        "importe": 76.38,
+        "iva": 16.04,
+        "total": 92.42,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2604489",
+        "fecha": "2026-03-12",
+        "periodo": "MARZO",
+        "importe": 389.14,
+        "iva": 81.72,
+        "total": 470.86,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531048401",
+        "fecha": "2026-03-12",
+        "periodo": "MARZO",
+        "importe": 260.04,
+        "iva": 46.52,
+        "total": 306.56,
+        "comentario": "Añadidos envases",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600297",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 241.68,
+        "iva": 50.75,
+        "total": 292.43,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001003",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 182.27,
+        "iva": 18.23,
+        "total": 200.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "825",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 129.6,
+        "iva": 27.22,
+        "total": 156.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1626",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 227.4,
+        "iva": 15.25,
+        "total": 242.65,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14523",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 195.37,
+        "iva": 8.04,
+        "total": 203.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "130326",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 31.96,
+        "iva": 6.71,
+        "total": 38.67,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Makro Otros",
+        "albaran": "7074",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 8.18,
+        "iva": 1.72,
+        "total": 9.9,
+        "comentario": "Tenedores desechables",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Makro Sala",
+        "albaran": "7074",
+        "fecha": "2026-03-13",
+        "periodo": "MARZO",
+        "importe": 238.14,
+        "iva": 50.01,
+        "total": 288.15,
+        "comentario": "Bebigas kiosko",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001031",
+        "fecha": "2026-03-14",
+        "periodo": "MARZO",
+        "importe": 156.57,
+        "iva": 15.64,
+        "total": 172.21,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "COMPRAS OTROS",
+        "albaran": "AMAZON",
+        "fecha": "2026-03-14",
+        "periodo": "MARZO",
+        "importe": 126.78,
+        "iva": 26.62,
+        "total": 153.4,
+        "comentario": "ROLLOS TERMICOS",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602401",
+        "fecha": "2026-03-14",
+        "periodo": "MARZO",
+        "importe": 396.91,
+        "iva": 39.69,
+        "total": 436.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14547",
+        "fecha": "2026-03-14",
+        "periodo": "MARZO",
+        "importe": 90.4,
+        "iva": 3.62,
+        "total": 94.02,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001027",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 188.77,
+        "iva": 17.71,
+        "total": 206.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18465",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 230.4,
+        "iva": 48.38,
+        "total": 278.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26004661",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 314.63,
+        "iva": 31.46,
+        "total": 346.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "160326",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 50.34,
+        "iva": 10.57,
+        "total": 60.91,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "10887",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 229.27,
+        "iva": 14.77,
+        "total": 244.04,
+        "comentario": "Comentario: añadir huevos granel 15 docenas",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1534",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 96.02,
+        "iva": 9.6,
+        "total": 105.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1535",
+        "fecha": "2026-03-16",
+        "periodo": "MARZO",
+        "importe": 17.99,
+        "iva": 1.8,
+        "total": 19.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "212",
+        "fecha": "2026-03-17",
+        "periodo": "MARZO",
+        "importe": 131.2,
+        "iva": 13.12,
+        "total": 144.32,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531165361",
+        "fecha": "2026-03-17",
+        "periodo": "MARZO",
+        "importe": 353.51,
+        "iva": 74.24,
+        "total": 427.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20863936",
+        "fecha": "2026-03-17",
+        "periodo": "MARZO",
+        "importe": 929.96,
+        "iva": 158.23,
+        "total": 1088.19,
+        "comentario": "Añadidos 2 envases casera",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "571",
+        "fecha": "2026-03-17",
+        "periodo": "MARZO",
+        "importe": 344.73,
+        "iva": 72.39,
+        "total": 417.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004136621",
+        "fecha": "2026-03-17",
+        "periodo": "MARZO",
+        "importe": 221.15,
+        "iva": 8.85,
+        "total": 230.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001071",
+        "fecha": "2026-03-18",
+        "periodo": "MARZO",
+        "importe": 547.08,
+        "iva": 54.71,
+        "total": 601.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2604819",
+        "fecha": "2026-03-18",
+        "periodo": "MARZO",
+        "importe": 641.14,
+        "iva": 134.64,
+        "total": 775.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14602",
+        "fecha": "2026-03-18",
+        "periodo": "MARZO",
+        "importe": 154.44,
+        "iva": 6.48,
+        "total": 160.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "180326",
+        "fecha": "2026-03-18",
+        "periodo": "MARZO",
+        "importe": 140.1,
+        "iva": 29.42,
+        "total": 169.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25150922",
+        "fecha": "2026-03-18",
+        "periodo": "MARZO",
+        "importe": 124.04,
+        "iva": 4.96,
+        "total": 129.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14621",
+        "fecha": "2026-03-19",
+        "periodo": "MARZO",
+        "importe": 108.09,
+        "iva": 4.32,
+        "total": 112.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "566344",
+        "fecha": "2026-03-19",
+        "periodo": "MARZO",
+        "importe": 124.15,
+        "iva": 12.42,
+        "total": 136.57,
+        "comentario": "5 huevo líquido, 5 yema de huevo y 5 mantequilla",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25151268",
+        "fecha": "2026-03-19",
+        "periodo": "MARZO",
+        "importe": 37.6,
+        "iva": 3.76,
+        "total": 41.36,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531282480",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 123.86,
+        "iva": 26.01,
+        "total": 149.87,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602631",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 291.57,
+        "iva": 29.16,
+        "total": 320.73,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "618",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 202.94,
+        "iva": 42.62,
+        "total": 245.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1815",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 145.05,
+        "iva": 13.71,
+        "total": 158.76,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14641",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 96.04,
+        "iva": 3.84,
+        "total": 99.88,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "200326",
+        "fecha": "2026-03-20",
+        "periodo": "MARZO",
+        "importe": 27.36,
+        "iva": 5.74,
+        "total": 33.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001136",
+        "fecha": "2026-03-21",
+        "periodo": "MARZO",
+        "importe": 406.67,
+        "iva": 39.5,
+        "total": 446.17,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602697",
+        "fecha": "2026-03-21",
+        "periodo": "MARZO",
+        "importe": 283.66,
+        "iva": 28.37,
+        "total": 312.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26019137",
+        "fecha": "2026-03-21",
+        "periodo": "MARZO",
+        "importe": 419.9,
+        "iva": 41.99,
+        "total": 461.89,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14663",
+        "fecha": "2026-03-21",
+        "periodo": "MARZO",
+        "importe": 174.85,
+        "iva": 7.4,
+        "total": 182.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600344",
+        "fecha": "2026-03-23",
+        "periodo": "MARZO",
+        "importe": 48.24,
+        "iva": 10.13,
+        "total": 58.37,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "558",
+        "fecha": "2026-03-23",
+        "periodo": "MARZO",
+        "importe": 126.48,
+        "iva": 26.56,
+        "total": 153.04,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1855",
+        "fecha": "2026-03-23",
+        "periodo": "MARZO",
+        "importe": 413.41,
+        "iva": 30.94,
+        "total": 444.35,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "230326",
+        "fecha": "2026-03-23",
+        "periodo": "MARZO",
+        "importe": 60.5,
+        "iva": 12.7,
+        "total": 73.2,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1552",
+        "fecha": "2026-03-23",
+        "periodo": "MARZO",
+        "importe": 38.51,
+        "iva": 6.02,
+        "total": 44.53,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001159",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 523.88,
+        "iva": 49.78,
+        "total": 573.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "239",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 123.2,
+        "iva": 12.32,
+        "total": 135.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18508",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 54.6,
+        "iva": 11.47,
+        "total": 66.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2605258",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 419.61,
+        "iva": 88.12,
+        "total": 507.73,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531360213",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 301.22,
+        "iva": 63.26,
+        "total": 364.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531360211",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": -64.67,
+        "iva": -13.58,
+        "total": -78.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602749",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 82.5,
+        "iva": 8.25,
+        "total": 90.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20867188",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 581.55,
+        "iva": 115.19,
+        "total": 696.74,
+        "comentario": "Añadido 1 envase casera",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Europastry",
+        "albaran": "73307616",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 154.71,
+        "iva": 11.31,
+        "total": 166.02,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14701",
+        "fecha": "2026-03-24",
+        "periodo": "MARZO",
+        "importe": 116.87,
+        "iva": 8.43,
+        "total": 125.3,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "645",
+        "fecha": "2026-03-25",
+        "periodo": "MARZO",
+        "importe": 250.05,
+        "iva": 52.51,
+        "total": 302.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "1933",
+        "fecha": "2026-03-25",
+        "periodo": "MARZO",
+        "importe": 204.33,
+        "iva": 20.43,
+        "total": 224.76,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14714",
+        "fecha": "2026-03-25",
+        "periodo": "MARZO",
+        "importe": 217.89,
+        "iva": 8.71,
+        "total": 226.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "250326",
+        "fecha": "2026-03-25",
+        "periodo": "MARZO",
+        "importe": 122.1,
+        "iva": 25.64,
+        "total": 147.74,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602872",
+        "fecha": "2026-03-26",
+        "periodo": "MARZO",
+        "importe": 113.15,
+        "iva": 11.32,
+        "total": 124.47,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14738",
+        "fecha": "2026-03-26",
+        "periodo": "MARZO",
+        "importe": 237.78,
+        "iva": 14.12,
+        "total": 251.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26024071",
+        "fecha": "2026-03-26",
+        "periodo": "MARZO",
+        "importe": 76.35,
+        "iva": 7.64,
+        "total": 83.99,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004184754",
+        "fecha": "2026-03-26",
+        "periodo": "MARZO",
+        "importe": 192.8,
+        "iva": 9.19,
+        "total": 201.99,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001206",
+        "fecha": "2026-03-27",
+        "periodo": "MARZO",
+        "importe": 96.76,
+        "iva": 8.49,
+        "total": 105.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26021032",
+        "fecha": "2026-03-27",
+        "periodo": "MARZO",
+        "importe": 672.0,
+        "iva": 67.2,
+        "total": 739.2,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26005484",
+        "fecha": "2026-03-27",
+        "periodo": "MARZO",
+        "importe": 314.63,
+        "iva": 31.47,
+        "total": 346.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14752",
+        "fecha": "2026-03-27",
+        "periodo": "MARZO",
+        "importe": 150.5,
+        "iva": 15.05,
+        "total": 165.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "270326",
+        "fecha": "2026-03-27",
+        "periodo": "MARZO",
+        "importe": 33.3,
+        "iva": 6.99,
+        "total": 40.29,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2602978",
+        "fecha": "2026-03-28",
+        "periodo": "MARZO",
+        "importe": 303.73,
+        "iva": 30.37,
+        "total": 334.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14768",
+        "fecha": "2026-03-28",
+        "periodo": "MARZO",
+        "importe": 109.13,
+        "iva": 4.51,
+        "total": 113.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "300326",
+        "fecha": "2026-03-30",
+        "periodo": "MARZO",
+        "importe": 36.74,
+        "iva": 7.67,
+        "total": 44.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1565",
+        "fecha": "2026-03-30",
+        "periodo": "MARZO",
+        "importe": 113.8,
+        "iva": 11.93,
+        "total": 125.73,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "253",
+        "fecha": "2026-03-31",
+        "periodo": "MARZO",
+        "importe": 93.0,
+        "iva": 9.3,
+        "total": 102.3,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531599320",
+        "fecha": "2026-03-31",
+        "periodo": "MARZO",
+        "importe": -69.34,
+        "iva": -14.56,
+        "total": -83.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531599319",
+        "fecha": "2026-03-31",
+        "periodo": "MARZO",
+        "importe": 107.55,
+        "iva": 22.59,
+        "total": 130.14,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531599322",
+        "fecha": "2026-03-31",
+        "periodo": "MARZO",
+        "importe": 47.05,
+        "iva": 9.87,
+        "total": 56.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20870798",
+        "fecha": "2026-03-31",
+        "periodo": "MARZO",
+        "importe": 115.95,
+        "iva": 20.43,
+        "total": 136.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001260",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 516.81,
+        "iva": 51.68,
+        "total": 568.49,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2605686",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 131.6,
+        "iva": 27.64,
+        "total": 159.24,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Europastry",
+        "albaran": "73355824",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 72.22,
+        "iva": 7.22,
+        "total": 79.44,
+        "comentario": "2 cajas burger beach (80 ud)",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14816",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 294.53,
+        "iva": 14.59,
+        "total": 309.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "541029",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 148.9,
+        "iva": 14.89,
+        "total": 163.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "10426",
+        "fecha": "2026-04-01",
+        "periodo": "ABRIL",
+        "importe": 48.96,
+        "iva": 10.28,
+        "total": 59.24,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "20426",
+        "fecha": "2026-04-02",
+        "periodo": "ABRIL",
+        "importe": 16.56,
+        "iva": 3.47,
+        "total": 20.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001280",
+        "fecha": "2026-04-06",
+        "periodo": "ABRIL",
+        "importe": 447.06,
+        "iva": 42.33,
+        "total": 489.39,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "718",
+        "fecha": "2026-04-06",
+        "periodo": "ABRIL",
+        "importe": 226.32,
+        "iva": 47.53,
+        "total": 273.85,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "675",
+        "fecha": "2026-04-06",
+        "periodo": "ABRIL",
+        "importe": 206.28,
+        "iva": 43.32,
+        "total": 249.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "2208",
+        "fecha": "2026-04-06",
+        "periodo": "ABRIL",
+        "importe": 267.94,
+        "iva": 19.83,
+        "total": 287.77,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2603189",
+        "fecha": "2026-04-07",
+        "periodo": "ABRIL",
+        "importe": 193.47,
+        "iva": 19.35,
+        "total": 212.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1574",
+        "fecha": "2026-04-07",
+        "periodo": "ABRIL",
+        "importe": 41.33,
+        "iva": 4.13,
+        "total": 45.46,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531789180",
+        "fecha": "2026-04-08",
+        "periodo": "ABRIL",
+        "importe": 210.41,
+        "iva": 44.19,
+        "total": 254.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20873526",
+        "fecha": "2026-04-08",
+        "periodo": "ABRIL",
+        "importe": 407.84,
+        "iva": 73.15,
+        "total": 480.99,
+        "comentario": "Añado envases",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "757",
+        "fecha": "2026-04-08",
+        "periodo": "ABRIL",
+        "importe": 176.35,
+        "iva": 37.03,
+        "total": 213.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "80426",
+        "fecha": "2026-04-08",
+        "periodo": "ABRIL",
+        "importe": 110.12,
+        "iva": 23.13,
+        "total": 133.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "769",
+        "fecha": "2026-04-09",
+        "periodo": "ABRIL",
+        "importe": 184.35,
+        "iva": 38.71,
+        "total": 223.06,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25158762",
+        "fecha": "2026-04-09",
+        "periodo": "ABRIL",
+        "importe": 117.54,
+        "iva": 6.12,
+        "total": 123.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001356",
+        "fecha": "2026-04-10",
+        "periodo": "ABRIL",
+        "importe": 227.47,
+        "iva": 21.24,
+        "total": 248.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14922",
+        "fecha": "2026-04-10",
+        "periodo": "ABRIL",
+        "importe": 49.41,
+        "iva": 2.06,
+        "total": 51.47,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25159195",
+        "fecha": "2026-04-10",
+        "periodo": "ABRIL",
+        "importe": 60.69,
+        "iva": 2.43,
+        "total": 63.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "14885",
+        "fecha": "2026-04-10",
+        "periodo": "ABRIL",
+        "importe": 494.58,
+        "iva": 37.07,
+        "total": 531.65,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004254095",
+        "fecha": "2026-04-10",
+        "periodo": "ABRIL",
+        "importe": 220.36,
+        "iva": 10.3,
+        "total": 230.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2603406",
+        "fecha": "2026-04-11",
+        "periodo": "ABRIL",
+        "importe": 402.84,
+        "iva": 40.28,
+        "total": 443.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14942",
+        "fecha": "2026-04-11",
+        "periodo": "ABRIL",
+        "importe": 40.16,
+        "iva": 1.61,
+        "total": 41.77,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001385",
+        "fecha": "2026-04-13",
+        "periodo": "ABRIL",
+        "importe": 107.4,
+        "iva": 10.74,
+        "total": 118.14,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Crem de Lux",
+        "albaran": "1627",
+        "fecha": "2026-04-13",
+        "periodo": "ABRIL",
+        "importe": 97.38,
+        "iva": 9.74,
+        "total": 107.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "14966",
+        "fecha": "2026-04-13",
+        "periodo": "ABRIL",
+        "importe": 118.87,
+        "iva": 4.75,
+        "total": 123.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "130426",
+        "fecha": "2026-04-13",
+        "periodo": "ABRIL",
+        "importe": 15.34,
+        "iva": 3.22,
+        "total": 18.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "289",
+        "fecha": "2026-04-14",
+        "periodo": "ABRIL",
+        "importe": 92.65,
+        "iva": 9.27,
+        "total": 101.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4531962759",
+        "fecha": "2026-04-14",
+        "periodo": "ABRIL",
+        "importe": 130.82,
+        "iva": 25.47,
+        "total": 156.29,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20875986",
+        "fecha": "2026-04-14",
+        "periodo": "ABRIL",
+        "importe": 302.06,
+        "iva": 48.2,
+        "total": 350.26,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26006481",
+        "fecha": "2026-04-14",
+        "periodo": "ABRIL",
+        "importe": 314.63,
+        "iva": 31.46,
+        "total": 346.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004277506",
+        "fecha": "2026-04-15",
+        "periodo": "ABRIL",
+        "importe": 64.9,
+        "iva": 4.92,
+        "total": 69.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "150426",
+        "fecha": "2026-04-15",
+        "periodo": "ABRIL",
+        "importe": 67.0,
+        "iva": 14.07,
+        "total": 81.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000593",
+        "fecha": "2026-04-17",
+        "periodo": "ABRIL",
+        "importe": 168.02,
+        "iva": 16.8,
+        "total": 184.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001462",
+        "fecha": "2026-04-17",
+        "periodo": "ABRIL",
+        "importe": 170.2,
+        "iva": 17.02,
+        "total": 187.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26026150",
+        "fecha": "2026-04-17",
+        "periodo": "ABRIL",
+        "importe": 764.75,
+        "iva": 76.48,
+        "total": 841.23,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15029",
+        "fecha": "2026-04-17",
+        "periodo": "ABRIL",
+        "importe": 118.72,
+        "iva": 4.89,
+        "total": 123.61,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2603685",
+        "fecha": "2026-04-18",
+        "periodo": "ABRIL",
+        "importe": 199.97,
+        "iva": 20.0,
+        "total": 219.97,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15052",
+        "fecha": "2026-04-18",
+        "periodo": "ABRIL",
+        "importe": 236.72,
+        "iva": 9.47,
+        "total": 246.19,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "200426",
+        "fecha": "2026-04-20",
+        "periodo": "ABRIL",
+        "importe": 24.32,
+        "iva": 5.11,
+        "total": 29.43,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532176545",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 154.28,
+        "iva": 32.4,
+        "total": 186.68,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001515",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 392.48,
+        "iva": 39.25,
+        "total": 431.73,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2606955",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 205.0,
+        "iva": 43.05,
+        "total": 248.05,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20879373",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 24.37,
+        "iva": 5.11,
+        "total": 29.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20879370",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 8.3,
+        "iva": 1.74,
+        "total": 10.04,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20879350",
+        "fecha": "2026-04-21",
+        "periodo": "ABRIL",
+        "importe": 619.25,
+        "iva": 115.29,
+        "total": 734.54,
+        "comentario": "Añadir 3 envases barril 50L",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "1104",
+        "fecha": "2026-04-22",
+        "periodo": "ABRIL",
+        "importe": 84.55,
+        "iva": 8.46,
+        "total": 93.01,
+        "comentario": "FACTURA",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532225845",
+        "fecha": "2026-04-22",
+        "periodo": "ABRIL",
+        "importe": 42.81,
+        "iva": 6.99,
+        "total": 49.8,
+        "comentario": "Añadidos envases",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "220426",
+        "fecha": "2026-04-22",
+        "periodo": "ABRIL",
+        "importe": 71.74,
+        "iva": 15.07,
+        "total": 86.81,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2603785",
+        "fecha": "2026-04-22",
+        "periodo": "ABRIL",
+        "importe": 108.25,
+        "iva": 10.83,
+        "total": 119.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15108",
+        "fecha": "2026-04-22",
+        "periodo": "ABRIL",
+        "importe": 207.66,
+        "iva": 8.31,
+        "total": 215.97,
+        "comentario": "Añadidas 8 burratas. Comprobar precio final",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001552",
+        "fecha": "2026-04-23",
+        "periodo": "ABRIL",
+        "importe": 150.93,
+        "iva": 12.73,
+        "total": 163.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "2873",
+        "fecha": "2026-04-23",
+        "periodo": "ABRIL",
+        "importe": 518.29,
+        "iva": 43.55,
+        "total": 561.84,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15127",
+        "fecha": "2026-04-23",
+        "periodo": "ABRIL",
+        "importe": 215.13,
+        "iva": 15.65,
+        "total": 230.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "878",
+        "fecha": "2026-04-23",
+        "periodo": "ABRIL",
+        "importe": 301.2,
+        "iva": 63.25,
+        "total": 364.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "877",
+        "fecha": "2026-04-23",
+        "periodo": "ABRIL",
+        "importe": 375.0,
+        "iva": 78.75,
+        "total": 453.75,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000608",
+        "fecha": "2026-04-24",
+        "periodo": "ABRIL",
+        "importe": 135.8,
+        "iva": 18.26,
+        "total": 154.06,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004326357",
+        "fecha": "2026-04-24",
+        "periodo": "ABRIL",
+        "importe": 186.01,
+        "iva": 7.43,
+        "total": 193.44,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "240426",
+        "fecha": "2026-04-24",
+        "periodo": "ABRIL",
+        "importe": 24.46,
+        "iva": 5.14,
+        "total": 29.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "26039651",
+        "fecha": "2026-04-25",
+        "periodo": "ABRIL",
+        "importe": 364.92,
+        "iva": 36.49,
+        "total": 401.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "2959",
+        "fecha": "2026-04-25",
+        "periodo": "ABRIL",
+        "importe": 236.45,
+        "iva": 16.37,
+        "total": 252.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15157",
+        "fecha": "2026-04-25",
+        "periodo": "ABRIL",
+        "importe": 161.77,
+        "iva": 8.45,
+        "total": 170.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "270426",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 22.02,
+        "iva": 4.62,
+        "total": 26.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2603983",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 175.25,
+        "iva": 17.53,
+        "total": 192.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "913",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 77.5,
+        "iva": 16.28,
+        "total": 93.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3001",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 321.66,
+        "iva": 26.37,
+        "total": 348.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15178",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 185.9,
+        "iva": 9.83,
+        "total": 195.73,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001587",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 640.24,
+        "iva": 64.02,
+        "total": 704.26,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Viena La Baguette",
+        "albaran": "10646",
+        "fecha": "2026-04-27",
+        "periodo": "ABRIL",
+        "importe": 53.5,
+        "iva": 2.14,
+        "total": 55.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532411776",
+        "fecha": "2026-04-28",
+        "periodo": "ABRIL",
+        "importe": 1259.78,
+        "iva": 260.54,
+        "total": 1520.32,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532411778",
+        "fecha": "2026-04-28",
+        "periodo": "ABRIL",
+        "importe": 36.5,
+        "iva": 7.65,
+        "total": 44.15,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26028308",
+        "fecha": "2026-04-28",
+        "periodo": "ABRIL",
+        "importe": 777.0,
+        "iva": 77.7,
+        "total": 854.7,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15196",
+        "fecha": "2026-04-28",
+        "periodo": "ABRIL",
+        "importe": -9.81,
+        "iva": -2.42,
+        "total": -12.23,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20883214",
+        "fecha": "2026-04-28",
+        "periodo": "ABRIL",
+        "importe": 2117.11,
+        "iva": 405.48,
+        "total": 2522.59,
+        "comentario": "Añadidos 4 envases barril, 4 envases barril sin y 2 botellas CO2",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604088",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 93.0,
+        "iva": 9.3,
+        "total": 102.3,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "929",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 47.1,
+        "iva": 9.89,
+        "total": 56.99,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001647",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 450.86,
+        "iva": 38.17,
+        "total": 489.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Viena La Baguette",
+        "albaran": "10922",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 48.0,
+        "iva": 1.92,
+        "total": 49.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "290426",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 108.32,
+        "iva": 22.75,
+        "total": 131.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Hielos Cubimay",
+        "albaran": "2921",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 90.91,
+        "iva": 9.09,
+        "total": 100.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Compras Otros",
+        "albaran": "Amazon",
+        "fecha": "2026-04-29",
+        "periodo": "ABRIL",
+        "importe": 16.52,
+        "iva": 3.47,
+        "total": 19.99,
+        "comentario": "Pasta combustible",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604162",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 349.45,
+        "iva": 34.95,
+        "total": 384.4,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15241",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 329.53,
+        "iva": 13.18,
+        "total": 342.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004356947",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 145.85,
+        "iva": 7.32,
+        "total": 153.17,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "339",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 172.1,
+        "iva": 17.21,
+        "total": 189.31,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2607576",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 501.47,
+        "iva": 105.3,
+        "total": 606.77,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000622",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 26.44,
+        "iva": 2.64,
+        "total": 29.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "944",
+        "fecha": "2026-04-30",
+        "periodo": "ABRIL",
+        "importe": 96.0,
+        "iva": 20.16,
+        "total": 116.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "10526",
+        "fecha": "2026-05-01",
+        "periodo": "MAYO",
+        "importe": 22.88,
+        "iva": 4.8,
+        "total": 27.68,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Compras Cocina",
+        "albaran": "891645",
+        "fecha": "2026-05-02",
+        "periodo": "MAYO",
+        "importe": 92.52,
+        "iva": 8.2,
+        "total": 100.72,
+        "comentario": "Carrefour chocolatinas, naranjas, jamón y limones",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Viena La Baguette",
+        "albaran": "11358",
+        "fecha": "2026-05-02",
+        "periodo": "MAYO",
+        "importe": 95.0,
+        "iva": 3.8,
+        "total": 98.8,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18762",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 128.4,
+        "iva": 26.96,
+        "total": 155.36,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "40526",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 33.98,
+        "iva": 7.13,
+        "total": 41.11,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001690",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 1410.7,
+        "iva": 141.07,
+        "total": 1551.77,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604202",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 237.34,
+        "iva": 23.73,
+        "total": 261.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26030131",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 786.1,
+        "iva": 78.61,
+        "total": 864.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "960",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 368.62,
+        "iva": 77.41,
+        "total": 446.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "932",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 62.25,
+        "iva": 13.07,
+        "total": 75.32,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3200",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 631.95,
+        "iva": 54.25,
+        "total": 686.2,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26007625",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 314.63,
+        "iva": 31.46,
+        "total": 346.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15269",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 468.18,
+        "iva": 20.47,
+        "total": 488.65,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "547606",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 249.5,
+        "iva": 24.95,
+        "total": 274.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25167430",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 87.21,
+        "iva": 3.49,
+        "total": 90.7,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "Devolución parcial",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": -204.75,
+        "iva": -20.47,
+        "total": -225.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600597",
+        "fecha": "2026-05-04",
+        "periodo": "MAYO",
+        "importe": 255.84,
+        "iva": 53.73,
+        "total": 309.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532609876",
+        "fecha": "2026-05-05",
+        "periodo": "MAYO",
+        "importe": -109.49,
+        "iva": -20.99,
+        "total": -130.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532609879",
+        "fecha": "2026-05-05",
+        "periodo": "MAYO",
+        "importe": 289.67,
+        "iva": 60.83,
+        "total": 350.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20886394",
+        "fecha": "2026-05-05",
+        "periodo": "MAYO",
+        "importe": 1078.45,
+        "iva": 212.53,
+        "total": 1290.98,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Rubiato Paredes",
+        "albaran": "1000812",
+        "fecha": "2026-05-05",
+        "periodo": "MAYO",
+        "importe": 210.03,
+        "iva": 21.0,
+        "total": 231.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "1116",
+        "fecha": "2026-05-05",
+        "periodo": "MAYO",
+        "importe": 219.84,
+        "iva": 46.17,
+        "total": 266.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "60526",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 189.06,
+        "iva": 39.7,
+        "total": 228.76,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001753",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 618.64,
+        "iva": 59.52,
+        "total": 678.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604289",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 163.67,
+        "iva": 16.37,
+        "total": 180.04,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3292",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 469.99,
+        "iva": 36.9,
+        "total": 506.89,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15308",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 189.6,
+        "iva": 7.79,
+        "total": 197.39,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "InnovaChef",
+        "albaran": "5747",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 177.33,
+        "iva": 7.09,
+        "total": 184.42,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004384393",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 215.91,
+        "iva": 11.96,
+        "total": 227.87,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2607883",
+        "fecha": "2026-05-06",
+        "periodo": "MAYO",
+        "importe": 550.58,
+        "iva": 115.62,
+        "total": 666.2,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001768",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 132.63,
+        "iva": 13.26,
+        "total": 145.89,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604336",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 297.75,
+        "iva": 29.78,
+        "total": 327.53,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3369",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 115.25,
+        "iva": 11.53,
+        "total": 126.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15326",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 146.6,
+        "iva": 4.39,
+        "total": 150.99,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "143030",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 0,
+        "iva": 0.0,
+        "total": 0.0,
+        "comentario": "Reparación JEMI",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "996",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": 416.5,
+        "iva": 87.47,
+        "total": 503.97,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "AB90",
+        "fecha": "2026-05-07",
+        "periodo": "MAYO",
+        "importe": -64.8,
+        "iva": -13.61,
+        "total": -78.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1014",
+        "fecha": "2026-05-08",
+        "periodo": "MAYO",
+        "importe": 99.15,
+        "iva": 20.82,
+        "total": 119.97,
+        "comentario": "Reparación túnel de lavado JEMI",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Crem de Lux",
+        "albaran": "2154",
+        "fecha": "2026-05-08",
+        "periodo": "MAYO",
+        "importe": 84.22,
+        "iva": 8.42,
+        "total": 92.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25169811",
+        "fecha": "2026-05-08",
+        "periodo": "MAYO",
+        "importe": 94.8,
+        "iva": 9.48,
+        "total": 104.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000637",
+        "fecha": "2026-05-08",
+        "periodo": "MAYO",
+        "importe": 112.6,
+        "iva": 11.26,
+        "total": 123.86,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "80526",
+        "fecha": "2026-05-08",
+        "periodo": "MAYO",
+        "importe": 67.98,
+        "iva": 14.27,
+        "total": 82.25,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001659",
+        "fecha": "2026-05-09",
+        "periodo": "MAYO",
+        "importe": 109.39,
+        "iva": 10.94,
+        "total": 120.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604494",
+        "fecha": "2026-05-09",
+        "periodo": "MAYO",
+        "importe": 231.93,
+        "iva": 23.19,
+        "total": 255.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15361",
+        "fecha": "2026-05-09",
+        "periodo": "MAYO",
+        "importe": 129.33,
+        "iva": 6.67,
+        "total": 136.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "90526",
+        "fecha": "2026-05-09",
+        "periodo": "MAYO",
+        "importe": 110.3,
+        "iva": 23.16,
+        "total": 133.46,
+        "comentario": "NO",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18804",
+        "fecha": "2026-05-11",
+        "periodo": "MAYO",
+        "importe": 57.6,
+        "iva": 12.1,
+        "total": 69.7,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26008047",
+        "fecha": "2026-05-11",
+        "periodo": "MAYO",
+        "importe": 314.63,
+        "iva": 31.46,
+        "total": 346.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001799",
+        "fecha": "2026-05-11",
+        "periodo": "MAYO",
+        "importe": 182.27,
+        "iva": 18.23,
+        "total": 200.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4532826138",
+        "fecha": "2026-05-12",
+        "periodo": "MAYO",
+        "importe": 244.82,
+        "iva": 51.4,
+        "total": 296.22,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20889448",
+        "fecha": "2026-05-12",
+        "periodo": "MAYO",
+        "importe": 288.9,
+        "iva": 35.48,
+        "total": 324.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "130526",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 88.72,
+        "iva": 18.63,
+        "total": 107.35,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604594",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 103.48,
+        "iva": 10.35,
+        "total": 113.83,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15422",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 263.96,
+        "iva": 10.91,
+        "total": 274.87,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001854",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 167.81,
+        "iva": 16.78,
+        "total": 184.59,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004421498",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 166.72,
+        "iva": 6.67,
+        "total": 173.39,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3573",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 38.1,
+        "iva": 3.79,
+        "total": 41.89,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3575",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 290.63,
+        "iva": 26.65,
+        "total": 317.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "1058",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 182.19,
+        "iva": 38.26,
+        "total": 220.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1044",
+        "fecha": "2026-05-13",
+        "periodo": "MAYO",
+        "importe": 837.76,
+        "iva": 175.93,
+        "total": 1013.69,
+        "comentario": "Mesa alta coctel 8 ud",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20891121",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": -2.7,
+        "iva": -0.57,
+        "total": -3.27,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "376",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 96.0,
+        "iva": 9.6,
+        "total": 105.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000655",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 167.68,
+        "iva": 16.77,
+        "total": 184.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604683",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 43.56,
+        "iva": 4.36,
+        "total": 47.92,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1053",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 12.45,
+        "iva": 2.61,
+        "total": 15.06,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26033312",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 816.2,
+        "iva": 81.62,
+        "total": 897.82,
+        "comentario": "¿Devuelto?",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1065",
+        "fecha": "2026-05-14",
+        "periodo": "MAYO",
+        "importe": 146.0,
+        "iva": 30.66,
+        "total": 176.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "150526",
+        "fecha": "2026-05-15",
+        "periodo": "MAYO",
+        "importe": 22.56,
+        "iva": 4.73,
+        "total": 27.29,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001855",
+        "fecha": "2026-05-16",
+        "periodo": "MAYO",
+        "importe": 263.18,
+        "iva": 23.9,
+        "total": 287.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604763",
+        "fecha": "2026-05-16",
+        "periodo": "MAYO",
+        "importe": 134.15,
+        "iva": 13.42,
+        "total": 147.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15463",
+        "fecha": "2026-05-16",
+        "periodo": "MAYO",
+        "importe": 137.48,
+        "iva": 5.5,
+        "total": 142.98,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604787",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 114.79,
+        "iva": 11.48,
+        "total": 126.27,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Crem de Lux",
+        "albaran": "2288",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 141.37,
+        "iva": 14.14,
+        "total": 155.51,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3671",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 235.32,
+        "iva": 17.22,
+        "total": 252.54,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "180526",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 215.76,
+        "iva": 21.58,
+        "total": 237.34,
+        "comentario": "10 mantequilla, 4 yema, 6 huevo entero, 10 nata 35%",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15480",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 265.6,
+        "iva": 11.18,
+        "total": 276.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "180526",
+        "fecha": "2026-05-18",
+        "periodo": "MAYO",
+        "importe": 34.58,
+        "iva": 7.26,
+        "total": 41.84,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533039402",
+        "fecha": "2026-05-19",
+        "periodo": "MAYO",
+        "importe": 147.64,
+        "iva": 31.0,
+        "total": 178.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20892775",
+        "fecha": "2026-05-19",
+        "periodo": "MAYO",
+        "importe": 1283.52,
+        "iva": 229.36,
+        "total": 1512.88,
+        "comentario": "Añadir 4 envases agua 1L y 1 envase casera",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20892777",
+        "fecha": "2026-05-19",
+        "periodo": "MAYO",
+        "importe": 50.8,
+        "iva": 10.68,
+        "total": 61.48,
+        "comentario": "Añadir 4 envases casera",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "392",
+        "fecha": "2026-05-19",
+        "periodo": "MAYO",
+        "importe": 108.95,
+        "iva": 10.9,
+        "total": 119.85,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "200526",
+        "fecha": "2026-05-20",
+        "periodo": "MAYO",
+        "importe": 64.68,
+        "iva": 13.58,
+        "total": 78.26,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2604915",
+        "fecha": "2026-05-21",
+        "periodo": "MAYO",
+        "importe": 204.5,
+        "iva": 20.45,
+        "total": 224.95,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26001967",
+        "fecha": "2026-05-21",
+        "periodo": "MAYO",
+        "importe": 132.67,
+        "iva": 13.27,
+        "total": 145.94,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15534",
+        "fecha": "2026-05-21",
+        "periodo": "MAYO",
+        "importe": 107.3,
+        "iva": 4.28,
+        "total": 111.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "220526",
+        "fecha": "2026-05-22",
+        "periodo": "MAYO",
+        "importe": 17.08,
+        "iva": 3.58,
+        "total": 20.66,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3895",
+        "fecha": "2026-05-22",
+        "periodo": "MAYO",
+        "importe": 511.74,
+        "iva": 36.78,
+        "total": 548.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004471439",
+        "fecha": "2026-05-22",
+        "periodo": "MAYO",
+        "importe": 129.42,
+        "iva": 6.66,
+        "total": 136.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000672",
+        "fecha": "2026-05-22",
+        "periodo": "MAYO",
+        "importe": 155.41,
+        "iva": 15.54,
+        "total": 170.95,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15572",
+        "fecha": "2026-05-23",
+        "periodo": "MAYO",
+        "importe": 178.86,
+        "iva": 7.23,
+        "total": 186.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002001",
+        "fecha": "2026-05-23",
+        "periodo": "MAYO",
+        "importe": 331.43,
+        "iva": 33.14,
+        "total": 364.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "3909",
+        "fecha": "2026-05-23",
+        "periodo": "MAYO",
+        "importe": 115.25,
+        "iva": 11.53,
+        "total": 126.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605078",
+        "fecha": "2026-05-23",
+        "periodo": "MAYO",
+        "importe": 210.3,
+        "iva": 21.03,
+        "total": 231.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "250526",
+        "fecha": "2026-05-25",
+        "periodo": "MAYO",
+        "importe": 28.1,
+        "iva": 5.9,
+        "total": 34.0,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "1143",
+        "fecha": "2026-05-25",
+        "periodo": "MAYO",
+        "importe": 238.52,
+        "iva": 50.09,
+        "total": 288.61,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "1279",
+        "fecha": "2026-05-25",
+        "periodo": "MAYO",
+        "importe": 64.8,
+        "iva": 13.61,
+        "total": 78.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533262576",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": -24.0,
+        "iva": -5.04,
+        "total": -29.04,
+        "comentario": "Tachado 14 cajas y cambiado por 5",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533262574",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": 347.24,
+        "iva": 72.92,
+        "total": 420.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20896013",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": 907.21,
+        "iva": 172.92,
+        "total": 1080.13,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15608",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": 249.81,
+        "iva": 11.13,
+        "total": 260.94,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002022",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": 218.75,
+        "iva": 19.46,
+        "total": 238.21,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "26008873",
+        "fecha": "2026-05-26",
+        "periodo": "MAYO",
+        "importe": 314.63,
+        "iva": 31.47,
+        "total": 346.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "417",
+        "fecha": "2026-05-27",
+        "periodo": "MAYO",
+        "importe": 114.6,
+        "iva": 11.46,
+        "total": 126.06,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2609514",
+        "fecha": "2026-05-27",
+        "periodo": "MAYO",
+        "importe": 1014.97,
+        "iva": 213.15,
+        "total": 1228.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533314066",
+        "fecha": "2026-05-27",
+        "periodo": "MAYO",
+        "importe": 92.45,
+        "iva": 19.43,
+        "total": 111.88,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "270526",
+        "fecha": "2026-05-27",
+        "periodo": "MAYO",
+        "importe": 111.78,
+        "iva": 23.52,
+        "total": 135.3,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "453365465",
+        "fecha": "2026-05-28",
+        "periodo": "MAYO",
+        "importe": 84.96,
+        "iva": 17.84,
+        "total": 102.8,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Crem de Lux",
+        "albaran": "2533",
+        "fecha": "2026-05-28",
+        "periodo": "MAYO",
+        "importe": 110.74,
+        "iva": 11.07,
+        "total": 121.81,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "4093",
+        "fecha": "2026-05-28",
+        "periodo": "MAYO",
+        "importe": 79.27,
+        "iva": 10.13,
+        "total": 89.4,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15653",
+        "fecha": "2026-05-28",
+        "periodo": "MAYO",
+        "importe": 175.24,
+        "iva": 10.84,
+        "total": 186.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "compras otros",
+        "albaran": "amazon-rollos termicos",
+        "fecha": "2026-05-28",
+        "periodo": "MAYO",
+        "importe": 90.04,
+        "iva": 18.91,
+        "total": 108.95,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605336",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 163.14,
+        "iva": 16.31,
+        "total": 179.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "290526",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 13.5,
+        "iva": 2.83,
+        "total": 16.33,
+        "comentario": "*",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002081",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 152.46,
+        "iva": 15.25,
+        "total": 167.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15674",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 116.68,
+        "iva": 4.67,
+        "total": 121.35,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26037336",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 766.8,
+        "iva": 76.68,
+        "total": 843.48,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000686",
+        "fecha": "2026-05-29",
+        "periodo": "MAYO",
+        "importe": 40.0,
+        "iva": 4.39,
+        "total": 44.39,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004515529",
+        "fecha": "2026-05-30",
+        "periodo": "MAYO",
+        "importe": 91.62,
+        "iva": 3.66,
+        "total": 95.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605409",
+        "fecha": "2026-05-30",
+        "periodo": "MAYO",
+        "importe": 49.0,
+        "iva": 4.9,
+        "total": 53.9,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "554031",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 155.0,
+        "iva": 15.5,
+        "total": 170.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002109",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 203.88,
+        "iva": 20.39,
+        "total": 224.27,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15719",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 161.86,
+        "iva": 6.47,
+        "total": 168.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Negrini SL",
+        "albaran": "25179109",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 60.69,
+        "iva": 2.43,
+        "total": 63.12,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "10626",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 44.26,
+        "iva": 9.29,
+        "total": 53.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "1217",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 178.16,
+        "iva": 37.41,
+        "total": 215.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1216",
+        "fecha": "2026-06-01",
+        "periodo": "JUNIO",
+        "importe": 102.12,
+        "iva": 21.45,
+        "total": 123.57,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605488",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 348.76,
+        "iva": 34.88,
+        "total": 383.64,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "438",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 145.55,
+        "iva": 14.55,
+        "total": 160.1,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533509343",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 1708.31,
+        "iva": 350.64,
+        "total": 2058.95,
+        "comentario": "Recibidos 9 coca cola zero pet",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20899647",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 1253.82,
+        "iva": 235.06,
+        "total": 1488.88,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15737",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 53.9,
+        "iva": 5.39,
+        "total": 59.29,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "1392",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 519.84,
+        "iva": 109.17,
+        "total": 629.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600735",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 444.48,
+        "iva": 93.34,
+        "total": 537.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4534527291",
+        "fecha": "2026-06-02",
+        "periodo": "JUNIO",
+        "importe": 33.6,
+        "iva": 7.06,
+        "total": 40.66,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2610003",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 533.54,
+        "iva": 112.04,
+        "total": 645.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "30626",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 85.76,
+        "iva": 18.0,
+        "total": 103.76,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002162",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 319.42,
+        "iva": 29.54,
+        "total": 348.96,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8004532841",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 236.83,
+        "iva": 13.18,
+        "total": 250.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "4316",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 60.45,
+        "iva": 12.69,
+        "total": 73.14,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "4289",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 278.89,
+        "iva": 27.89,
+        "total": 306.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "compras cocina",
+        "albaran": "Amazon-colorante",
+        "fecha": "2026-06-03",
+        "periodo": "JUNIO",
+        "importe": 7.27,
+        "iva": 0.73,
+        "total": 8.0,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1237",
+        "fecha": "2026-06-04",
+        "periodo": "JUNIO",
+        "importe": 149.41,
+        "iva": 31.37,
+        "total": 180.78,
+        "comentario": "Reparación JEMI",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002099",
+        "fecha": "2026-06-04",
+        "periodo": "JUNIO",
+        "importe": 472.32,
+        "iva": 47.23,
+        "total": 519.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15782",
+        "fecha": "2026-06-04",
+        "periodo": "JUNIO",
+        "importe": 11.65,
+        "iva": 1.17,
+        "total": 12.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Rubiato Paredes",
+        "albaran": "1010989",
+        "fecha": "2026-06-04",
+        "periodo": "JUNIO",
+        "importe": 322.23,
+        "iva": 32.22,
+        "total": 354.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "1240",
+        "fecha": "2026-06-04",
+        "periodo": "JUNIO",
+        "importe": 95.82,
+        "iva": 20.12,
+        "total": 115.94,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "4434",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 322.81,
+        "iva": 23.47,
+        "total": 346.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002201",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 300.65,
+        "iva": 28.85,
+        "total": 329.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "73",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 239.59,
+        "iva": 9.93,
+        "total": 249.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605677",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 319.35,
+        "iva": 31.94,
+        "total": 351.29,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000701",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 115.32,
+        "iva": 11.53,
+        "total": 126.85,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "50626",
+        "fecha": "2026-06-05",
+        "periodo": "JUNIO",
+        "importe": 46.56,
+        "iva": 9.77,
+        "total": 56.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26039390",
+        "fecha": "2026-06-06",
+        "periodo": "JUNIO",
+        "importe": 784.8,
+        "iva": 78.48,
+        "total": 863.28,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "76",
+        "fecha": "2026-06-06",
+        "periodo": "JUNIO",
+        "importe": 302.37,
+        "iva": 18.86,
+        "total": 321.23,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "1268",
+        "fecha": "2026-06-08",
+        "periodo": "JUNIO",
+        "importe": 291.5,
+        "iva": 61.22,
+        "total": 352.72,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26002233",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 75.78,
+        "iva": 7.58,
+        "total": 83.36,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "15832",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 208.35,
+        "iva": 8.33,
+        "total": 216.68,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2605775",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 220.51,
+        "iva": 22.05,
+        "total": 242.56,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "4534",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 115.25,
+        "iva": 11.53,
+        "total": 126.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "458",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 76.5,
+        "iva": 7.65,
+        "total": 84.15,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533750315",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 61.67,
+        "iva": 12.95,
+        "total": 74.62,
+        "comentario": "3 envases VR30",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4533750347",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 220.18,
+        "iva": 44.24,
+        "total": 264.42,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20903120",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 607.77,
+        "iva": 125.84,
+        "total": 733.61,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2610438",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 252.28,
+        "iva": 52.98,
+        "total": 305.26,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4534527292",
+        "fecha": "2026-06-09",
+        "periodo": "JUNIO",
+        "importe": 18.93,
+        "iva": 3.9Soy un modelo de lenguaje, así que no tengo esa capacidad.
