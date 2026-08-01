@@ -1,4 +1,3 @@
-
 import json
 import pandas as pd
 import streamlit as st
@@ -7,25 +6,703 @@ st.set_page_config(
     page_title="Control de Albaranes", page_icon="📋", layout="wide"
 )
 
+# Datos reales incrustados para garantizar que carguen al 100% sin errores
+RAW_DATA = [
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "78",
+        "fecha": "2026-01-14",
+        "periodo": "ENERO",
+        "importe": 849.17,
+        "iva": 178.33,
+        "total": 1027.5,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26003245",
+        "fecha": "2026-01-16",
+        "periodo": "ENERO",
+        "importe": 250.5,
+        "iva": 25.05,
+        "total": 275.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "7940000514",
+        "fecha": "2026-01-16",
+        "periodo": "ENERO",
+        "importe": 258.74,
+        "iva": 25.87,
+        "total": 284.61,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "108",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 1007.95,
+        "iva": 211.67,
+        "total": 1219.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Fabricas Peña",
+        "albaran": "260000983",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 299.25,
+        "iva": 29.93,
+        "total": 329.18,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13703",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 294.78,
+        "iva": 12.0,
+        "total": 306.78,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "523850",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 77.57,
+        "iva": 7.76,
+        "total": 85.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "AB 26000275",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": -250.5,
+        "iva": -25.05,
+        "total": -275.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26003762",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 264.38,
+        "iva": 26.44,
+        "total": 290.82,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "190126",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 296.0,
+        "iva": 62.16,
+        "total": 358.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "2177",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 1114.1,
+        "iva": 93.52,
+        "total": 1207.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8003857409",
+        "fecha": "2026-01-19",
+        "periodo": "ENERO",
+        "importe": 159.04,
+        "iva": 6.36,
+        "total": 165.4,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000203",
+        "fecha": "2026-01-20",
+        "periodo": "ENERO",
+        "importe": 1125.69,
+        "iva": 105.69,
+        "total": 1231.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2601051",
+        "fecha": "2026-01-20",
+        "periodo": "ENERO",
+        "importe": 2584.55,
+        "iva": 542.76,
+        "total": 3127.31,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "26000509",
+        "fecha": "2026-01-20",
+        "periodo": "ENERO",
+        "importe": 304.26,
+        "iva": 30.43,
+        "total": 334.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "114",
+        "fecha": "2026-01-20",
+        "periodo": "ENERO",
+        "importe": 68.2,
+        "iva": 14.32,
+        "total": 82.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26003952",
+        "fecha": "2026-01-20",
+        "periodo": "ENERO",
+        "importe": 176.75,
+        "iva": 17.68,
+        "total": 194.43,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000273",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 471.43,
+        "iva": 47.15,
+        "total": 518.58,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4529719394",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 536.17,
+        "iva": 110.59,
+        "total": 646.76,
+        "comentario": "Además 9 envases VR237 y 3 VR30",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4529984976",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 62.12,
+        "iva": 13.05,
+        "total": 75.17,
+        "comentario": "ENVASES",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Discarlux",
+        "albaran": "26004492",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 680.4,
+        "iva": 68.04,
+        "total": 748.44,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "128",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 346.04,
+        "iva": 72.67,
+        "total": 418.71,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Euroanchoas",
+        "albaran": "435",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 286.32,
+        "iva": 27.04,
+        "total": 313.36,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13732",
+        "fecha": "2026-01-21",
+        "periodo": "ENERO",
+        "importe": 176.64,
+        "iva": 7.15,
+        "total": 183.79,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2601231",
+        "fecha": "2026-01-22",
+        "periodo": "ENERO",
+        "importe": 57.84,
+        "iva": 12.14,
+        "total": 69.98,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Dispedisa",
+        "albaran": "20840508",
+        "fecha": "2026-01-22",
+        "periodo": "ENERO",
+        "importe": 1094.93,
+        "iva": 194.14,
+        "total": 1289.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "144",
+        "fecha": "2026-01-22",
+        "periodo": "ENERO",
+        "importe": 627.35,
+        "iva": 131.74,
+        "total": 759.09,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "147",
+        "fecha": "2026-01-22",
+        "periodo": "ENERO",
+        "importe": 797.58,
+        "iva": 167.5,
+        "total": 965.08,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Oxigema",
+        "albaran": "220126",
+        "fecha": "2026-01-22",
+        "periodo": "ENERO",
+        "importe": 392.0,
+        "iva": 82.32,
+        "total": 474.32,
+        "comentario": "4 Cascos y 4 Botellas",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000298",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 477.07,
+        "iva": 46.52,
+        "total": 523.59,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodega Hacienda Calavia SL",
+        "albaran": "18159",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 745.2,
+        "iva": 156.49,
+        "total": 901.69,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2600919",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 753.35,
+        "iva": 158.2,
+        "total": 911.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Compras Cocina",
+        "albaran": "Carrefour",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 45.93,
+        "iva": 4.64,
+        "total": 50.57,
+        "comentario": "Chocolates y vinagre",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2600644",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 191.83,
+        "iva": 19.18,
+        "total": 211.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "163",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 130.89,
+        "iva": 27.49,
+        "total": 158.38,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "160",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 299.69,
+        "iva": 62.93,
+        "total": 362.62,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13769",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 216.14,
+        "iva": 9.02,
+        "total": 225.16,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "3091",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 261.68,
+        "iva": 17.43,
+        "total": 279.11,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8003882531",
+        "fecha": "2026-01-23",
+        "periodo": "ENERO",
+        "importe": 173.15,
+        "iva": 10.1,
+        "total": 183.25,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000330",
+        "fecha": "2026-01-24",
+        "periodo": "ENERO",
+        "importe": 382.79,
+        "iva": 38.28,
+        "total": 421.07,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600070",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 415.68,
+        "iva": 87.29,
+        "total": 502.97,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Almacen de jamones Jumi SL",
+        "albaran": "26000322",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 297.14,
+        "iva": 29.71,
+        "total": 326.85,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2600703",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 136.37,
+        "iva": 13.64,
+        "total": 150.01,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13801",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 162.54,
+        "iva": 0.0,
+        "total": 169.45,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Ken foods",
+        "albaran": "525437",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 140.5,
+        "iva": 14.05,
+        "total": 154.55,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Torrelsa SA",
+        "albaran": "1440",
+        "fecha": "2026-01-26",
+        "periodo": "ENERO",
+        "importe": 118.04,
+        "iva": 11.8,
+        "total": 129.84,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Aperitivos Moncayo SL",
+        "albaran": "60",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 60.75,
+        "iva": 6.08,
+        "total": 66.83,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Baigorri SAU",
+        "albaran": "140",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 155.04,
+        "iva": 32.56,
+        "total": 187.6,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Bodegas Bordino",
+        "albaran": "2601063",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 444.55,
+        "iva": 93.36,
+        "total": 537.91,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4529851706",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 167.79,
+        "iva": 35.24,
+        "total": 203.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Coca-Cola European Partners Iberia SLU",
+        "albaran": "4529984977",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 17.43,
+        "iva": 3.65,
+        "total": 21.08,
+        "comentario": "ENVASES",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Compañia Vinicola del Norte de España SA",
+        "albaran": "18150",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 104.27,
+        "iva": 21.9,
+        "total": 126.17,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Lavin Lavanderías Industriales",
+        "albaran": "270126",
+        "fecha": "2026-01-27",
+        "periodo": "ENERO",
+        "importe": 82.98,
+        "iva": 17.43,
+        "total": 100.41,
+        "comentario": "",
+    },
+    {
+        "tipo": "Extras",
+        "proveedor": "Ecofax (Extra)",
+        "albaran": "196",
+        "fecha": "2026-01-28",
+        "periodo": "ENERO",
+        "importe": 910.86,
+        "iva": 191.28,
+        "total": 1102.14,
+        "comentario": "",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "211",
+        "fecha": "2026-01-29",
+        "periodo": "ENERO",
+        "importe": 19.44,
+        "iva": 4.08,
+        "total": 23.52,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "3817",
+        "fecha": "2026-01-29",
+        "periodo": "ENERO",
+        "importe": 304.34,
+        "iva": 17.69,
+        "total": 322.03,
+        "comentario": "",
+    },
+    {
+        "tipo": "Sala",
+        "proveedor": "Agro de Bazán SA",
+        "albaran": "2600053",
+        "fecha": "2026-01-30",
+        "periodo": "ENERO",
+        "importe": 319.2,
+        "iva": 67.03,
+        "total": 386.23,
+        "comentario": "Confirmado por Jose Luis. No tengo albarán",
+    },
+    {
+        "tipo": "Otros",
+        "proveedor": "Ecofax",
+        "albaran": "219",
+        "fecha": "2026-01-30",
+        "periodo": "ENERO",
+        "importe": -12.8,
+        "iva": -2.69,
+        "total": -15.49,
+        "comentario": "Devol bolsas antigrasa en factura",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Corner Empresarial SL",
+        "albaran": "2600894",
+        "fecha": "2026-01-31",
+        "periodo": "ENERO",
+        "importe": 210.15,
+        "iva": 21.02,
+        "total": 231.17,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Frutalis",
+        "albaran": "13876",
+        "fecha": "2026-01-31",
+        "periodo": "ENERO",
+        "importe": 122.8,
+        "iva": 5.53,
+        "total": 128.33,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "La Compagnie Des Desserts",
+        "albaran": "26000781",
+        "fecha": "2026-01-31",
+        "periodo": "ENERO",
+        "importe": -13.88,
+        "iva": -1.39,
+        "total": -15.27,
+        "comentario": "Abono parcial cambio tarifa en albarán 26003762",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Palleiro Gourmet y Restauracion SL",
+        "albaran": "REGULARIZACION ENERO",
+        "fecha": "2026-01-31",
+        "periodo": "ENERO",
+        "importe": -13.5,
+        "iva": -1.35,
+        "total": -14.85,
+        "comentario": "",
+    },
+    {
+        "tipo": "Cocina",
+        "proveedor": "Panamar Panaderos SL",
+        "albaran": "8003922816",
+        "fecha": "2026-01-31",
+        "periodo": "ENERO",
+        "importe": 68.86,
+        "iva": 2.75,
+        "total": 71.61,
+        "comentario": "",
+    },
+]
 
-@st.cache_data
-def load_data():
-  try:
-    df = pd.read_excel("albaranes.xlsx")
-  except Exception:
-    df = pd.read_csv("albaranes.csv")
-  if "fecha" in df.columns:
-    df["fecha"] = pd.to_datetime(df["fecha"]).dt.strftime("%Y-%m-%d")
-  return df
-
-
-try:
-  df_data = load_data()
-  raw_data_json = df_data.to_dict(orient="records")
-except Exception:
-  raw_data_json = []
-
-# Usamos un string normal (sin 'f') y .replace() para evitar conflictos con las llaves de CSS y JS
 html_code = """
 <!DOCTYPE html>
 <html lang="es">
@@ -66,8 +743,6 @@ html_code = """
     margin:0 auto;
     padding:28px 20px 80px;
   }
-
-  /* ===== HEADER ===== */
   .masthead{
     display:flex;
     justify-content:space-between;
@@ -121,8 +796,6 @@ html_code = """
     line-height:1.5;
   }
   .meta-badge b{display:block;font-size:13px;color:var(--copper);}
-
-  /* ===== TICKET RAIL (KPI) ===== */
   .rail{
     position:relative;
     margin-bottom:34px;
@@ -197,10 +870,6 @@ html_code = """
     font-size:11px;
     color:var(--muted-2);
   }
-  .ticket-sub.up{color:var(--good);}
-  .ticket-sub.down{color:var(--bad);}
-
-  /* ===== FILTER BAR ===== */
   .filters{
     display:flex;
     flex-wrap:wrap;
@@ -234,7 +903,6 @@ html_code = """
     border-color:var(--paper);
     font-weight:600;
   }
-  .chip .dot{width:8px;height:8px;}
   .search-wrap{
     margin-left:auto;
     position:relative;
@@ -271,8 +939,6 @@ html_code = """
     color:var(--muted-2);
     white-space:nowrap;
   }
-
-  /* ===== CHART GRID ===== */
   .grid2{
     display:grid;
     grid-template-columns:1.15fr 1fr;
@@ -300,14 +966,11 @@ html_code = """
   }
   .chart-box{position:relative;height:260px;}
   .chart-box.tall{height:320px;}
-
   .legend-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
   .legend-row{display:flex;align-items:center;gap:9px;font-size:12.5px;}
   .legend-row .dot{width:9px;height:9px;flex:none;}
   .legend-row .lname{color:var(--paper);flex:1;}
   .legend-row .lval{font-family:'IBM Plex Mono',monospace;color:var(--muted);}
-
-  /* ===== TOP PROVEEDORES ===== */
   .provrow{
     display:grid;
     grid-template-columns:26px 1fr 90px;
@@ -323,8 +986,6 @@ html_code = """
   .provbar-track{background:var(--ink);border-radius:3px;height:6px;margin-top:5px;overflow:hidden;}
   .provbar-fill{height:100%;background:var(--copper);border-radius:3px;}
   .provval{font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:right;}
-
-  /* ===== TABLE ===== */
   .table-panel{margin-top:18px;}
   .table-scroll{
     max-height:480px;
@@ -368,7 +1029,6 @@ html_code = """
     align-items:center;
     gap:5px;
   }
-
   .empty-state{
     text-align:center;
     padding:50px 20px;
@@ -376,7 +1036,6 @@ html_code = """
     font-family:'IBM Plex Mono',monospace;
     font-size:13px;
   }
-
   footer{
     text-align:center;
     margin-top:34px;
@@ -385,20 +1044,7 @@ html_code = """
     color:var(--muted-2);
     letter-spacing:.05em;
   }
-
-  @media (max-width:820px){
-    .tickets{grid-template-columns:repeat(2,1fr);}
-    .grid2{grid-template-columns:1fr;}
-    .search-wrap{max-width:none;flex-basis:100%;order:5;}
-    thead th:nth-child(4), tbody td:nth-child(4){display:none;}
-  }
-  @media (max-width:480px){
-    .tickets{grid-template-columns:1fr;}
-  }
-
   tbody tr{cursor:pointer;}
-
-  /* ===== DETAIL MODAL ===== */
   .modal-overlay{
     position:fixed; inset:0;
     background:rgba(15,12,9,.72);
@@ -502,7 +1148,6 @@ html_code = """
 </head>
 <body>
 <div class="wrap">
-
   <div class="masthead">
     <div>
       <p class="eyebrow">Restaurante Caná · La Moraleja</p>
@@ -601,14 +1246,7 @@ html_code = """
 <script>
 (function(){
   const RAW = JSON.parse(document.getElementById('raw-data').textContent);
-
-  const COLORS = {
-    Cocina:'#BE5A2E',
-    Sala:'#6F7A46',
-    Otros:'#D6A13A',
-    Extras:'#8C3F35'
-  };
-
+  const COLORS = {Cocina:'#BE5A2E', Sala:'#6F7A46', Otros:'#D6A13A', Extras:'#8C3F35'};
   const fmtEUR = (n) => n.toLocaleString('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
   const fmtEUR2 = (n) => n.toLocaleString('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
   const fmtDate = (iso) => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
@@ -934,9 +1572,5 @@ html_code = """
 </html>
 """
 
-# Reemplazamos el marcador de forma limpia sin conflictos de llaves
-html_code = html_code.replace(
-    "/*INJECT_JSON_HERE*/", json.dumps(raw_data_json)
-)
-
+html_code = html_code.replace("/*INJECT_JSON_HERE*/", json.dumps(RAW_DATA))
 st.components.v1.html(html_code, height=1400, scrolling=True)
