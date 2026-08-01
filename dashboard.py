@@ -10,6 +10,7 @@ Estructura del repo esperada:
         └── config.toml
 """
 
+import io
 import json
 
 import pandas as pd
@@ -64,7 +65,66 @@ def load_data() -> pd.DataFrame:
     return df
 
 
-df = load_data()
+@st.cache_data(show_spinner=False)
+def parse_uploaded_excel(file_bytes: bytes) -> pd.DataFrame:
+    """Repite exactamente la extracción validada contra
+    Control_albaranes_Moraleja_2_DASH.xlsx: hoja 'DATOS', filas con Tipo
+    asignado, total factura con fallback a Importe+IVA cuando falta."""
+    raw = pd.read_excel(io.BytesIO(file_bytes), sheet_name="DATOS", engine="openpyxl")
+
+    columnas_esperadas = {"Tipo", "PROVEEDOR", "Nº Albaran", "Fecha", "Periodo",
+                           "Importe", "IVA", "total factura", "Comentarios"}
+    faltantes = columnas_esperadas - set(raw.columns)
+    if faltantes:
+        raise ValueError(f"faltan columnas en la hoja 'DATOS': {', '.join(sorted(faltantes))}")
+
+    sub = raw[raw["Tipo"].notna()].copy()
+
+    total_final = sub["total factura"].copy()
+    falta_total = total_final.isna()
+    total_final.loc[falta_total] = (
+        sub.loc[falta_total, "Importe"].fillna(0) + sub.loc[falta_total, "IVA"].fillna(0)
+    )
+
+    out = pd.DataFrame({
+        "tipo": sub["Tipo"],
+        "proveedor": sub["PROVEEDOR"].fillna("Sin proveedor"),
+        "albaran": sub["Nº Albaran"].apply(lambda x: "" if pd.isna(x) else str(x)),
+        "fecha": pd.to_datetime(sub["Fecha"], errors="coerce"),
+        "periodo": sub["Periodo"].fillna("").astype(str),
+        "importe": sub["Importe"].fillna(0).round(2),
+        "iva": sub["IVA"].fillna(0).round(2),
+        "total": total_final.astype(float).round(2),
+        "comentario": sub["Comentarios"].fillna("").astype(str),
+    })
+    out = out[out["fecha"].notna()].reset_index(drop=True)
+    out["mes_key"] = out["fecha"].dt.strftime("%Y-%m")
+    out["semana"] = out["fecha"].dt.strftime("%G-W%V")
+    return out
+
+
+with st.expander("📤 Actualizar con un Excel nuevo", expanded=False):
+    st.caption(
+        "Sube tu archivo de control de albaranes actualizado (debe tener una hoja llamada "
+        "**DATOS** con las mismas columnas de siempre: Tipo, PROVEEDOR, Nº Albaran, Fecha, "
+        "Periodo, Importe, IVA, total factura, Comentarios). El dashboard se recalcula al momento; "
+        "no hace falta tocar el código ni volver a desplegar nada."
+    )
+    excel_subido = st.file_uploader("Excel de control de albaranes", type=["xlsx"], label_visibility="collapsed")
+
+if excel_subido is not None:
+    try:
+        with st.spinner("Leyendo el Excel…"):
+            df = parse_uploaded_excel(excel_subido.getvalue())
+        st.success(f"Usando **{excel_subido.name}** — {len(df)} albaranes cargados.")
+    except Exception as e:
+        st.error(
+            f"No he podido leer ese archivo ({e}). Comprueba que sea el mismo formato de siempre "
+            "(hoja 'DATOS' con esas columnas). Mientras tanto muestro los datos de referencia."
+        )
+        df = load_data()
+else:
+    df = load_data()
 
 # ---------------------------------------------------------------------------
 # HELPERS
@@ -174,12 +234,18 @@ st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 fecha_min, fecha_max = df["fecha"].min(), df["fecha"].max()
 rango = f"{fecha_min.strftime('%d/%m/%y')} → {fecha_max.strftime('%d/%m/%y')}"
 
+if fecha_min.year == fecha_max.year:
+    periodo_txt = f"entre {MONTH_FULL[fecha_min.month]} y {MONTH_FULL[fecha_max.month]} de {fecha_max.year}"
+else:
+    periodo_txt = (f"entre {MONTH_FULL[fecha_min.month]} de {fecha_min.year} "
+                    f"y {MONTH_FULL[fecha_max.month]} de {fecha_max.year}")
+
 st.markdown(f"""
 <div class="masthead">
   <div>
     <p class="eyebrow">Restaurante Caná · La Moraleja</p>
     <h1 class="brand-h1">Control de Albaranes</h1>
-    <p class="subtitle">{len(df)} albaranes registrados entre enero y julio de 2026.
+    <p class="subtitle">{len(df)} albaranes registrados {periodo_txt}.
     Filtra por área, proveedor o mes, y toca cualquier fila de la tabla para ver el ticket completo.</p>
   </div>
   <div class="meta-badge"><b>{rango}</b>periodo analizado</div>
